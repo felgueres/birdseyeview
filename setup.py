@@ -8,5 +8,9 @@ setup(
     version="0.1",
     description="Like Tesla's birdview but at home",
     author="Pablo Felgueres",
-    packages=find_packages()
+    packages=find_packages(),
+    install_requires=[
+        "opencv-python>=4.5.0",
+        "numpy>=1.20.0"
+    ] 
 )
