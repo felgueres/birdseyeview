@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
-from typing import List, Dict, Optional
+from typing import List, Dict
+
 
 class ObjectDetector:
     def __init__(self, model_size: str = 'yolov8n.pt', confidence_threshold: float = 0.5):
@@ -59,13 +60,3 @@ class ObjectDetector:
                        (bbox[0], bbox[1] - 5),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         return annotated_frame
-    
-    def filter_detections(self, detections: List[Dict], 
-                         classes_of_interest: Optional[List[str]] = None,
-                         min_confidence: Optional[float] = None) -> List[Dict]:
-        filtered = detections.copy()
-        if classes_of_interest:
-            filtered = [d for d in filtered if d['class'] in classes_of_interest]
-        if min_confidence:
-            filtered = [d for d in filtered if d['confidence'] >= min_confidence]
-        return filtered 

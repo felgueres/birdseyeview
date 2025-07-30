@@ -1,68 +1,111 @@
 import subprocess
 from bird.vision.detector import ObjectDetector
 import cv2
-from cv2 import VideoCapture
+import requests
+import numpy as np
+import time
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-def get_camera_names():
-    cameras = []
-    result = subprocess.run(['system_profiler', 'SPCameraDataType'], capture_output=True, text=True)
-    if result.returncode == 0:
-        lines = result.stdout.split('\n')
-        for line in lines:
-            if 'Model ID' in line or 'Product ID' in line:
-                cam_info = line.strip().split(':')[-1].strip()
-                cameras.append(cam_info)
-    return cameras
+class SonyMethods:
+    START_LIVEVIEW = 'startLiveview'
+    STOP_LIVEVIEW = 'stopLiveview'
+    START_RECMODE = 'startRecMode'
 
-def get_c920_specs():
-    return {
-        'max_resolution': (1920, 1080),
-        'diagonal_fov_deg': 78
-    }
-
-def get_camera_with_detection(i: int, enable_detection: bool = True, 
-                             model_size: str = 'yolov8n.pt',
-                             classes_of_interest: list = None) -> VideoCapture:
-    cap = cv2.VideoCapture(i)
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    cam_specs = get_c920_specs()
+class SonyA5000:
+    def __init__(self, camera_ip: str = "192.168.122.1", port: int = 8080):
+        self.camera_ip = camera_ip
+        self.port = port
+        self.base_url = f"http://{camera_ip}:{port}/sony/camera"
+        self.liveview_url = None
     
-    print({'w': w, 'h': h, 'fps': fps, 'diagonal_fov_deg': cam_specs['diagonal_fov_deg']})
+    def start_recording_mode(self) -> bool:
+        response = requests.post(self.base_url, json={"method": SonyMethods.START_RECMODE, "params": [], "id":1, "version":"1.0"})
+        return response.status_code == 200 and 'result' in response.json()
+    
+    def start_liveview(self) -> bool:
+        response = requests.post(self.base_url, json={"method": SonyMethods.START_LIVEVIEW, "params": [], "id":1, "version":"1.0"})
+        if response.status_code == 200:
+            data = response.json()
+            if "result" in data and data["result"]:
+                self.liveview_url = data["result"][0]
+                print(f"✓ Live view URL: {self.liveview_url}")
+                return True
+        return False
+    
+    def stream_frames(self):
+        """Generator that yields frames from camera"""
+        if not self.start_recording_mode():
+            raise Exception("Failed to start recording mode")
+        
+        if not self.start_liveview():
+            raise Exception("Failed to start live view")
+        
+        session = requests.Session()
+        response = session.get(self.liveview_url, stream=True)
+        
+        buffer = b''
+        
+        for chunk in response.iter_content(chunk_size=8192):
+            buffer += chunk
+            
+            # Look for JPEG frames in buffer
+            while True:
+                start = buffer.find(b'\xff\xd8')  # JPEG start
+                if start == -1:
+                    break
+                    
+                end = buffer.find(b'\xff\xd9', start)  # JPEG end
+                if end == -1:
+                    break
+                
+                # Extract JPEG frame
+                jpeg_data = buffer[start:end + 2]
+                buffer = buffer[end + 2:]
+                
+                nparr = np.frombuffer(jpeg_data, np.uint8)
+                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if frame is not None:
+                    yield frame
 
+def start_detection_generator(sony_cam, enable_detection=True, model_size: str = 'yolov8n.pt'):
+    """Detection using generator"""
+    
     detector = None
-    if enable_detection: detector = ObjectDetector(model_size=model_size, confidence_threshold=0.5)
+
+    if enable_detection: 
+        detector = ObjectDetector(model_size=model_size, confidence_threshold=0.5)
     
     frame_count = 0
-    while True:
-        if cap.isOpened():
-            ret, frame = cap.read()
-            if ret and frame is not None:
-                if detector:
-                    detections = detector.detect_objects(frame)
-                    if classes_of_interest:
-                        detections = detector.filter_detections(detections, classes_of_interest)
-                    frame = detector.draw_detections(frame, detections)
-                    if frame_count % 30 == 0 and detections:
-                        print(f"Detected {len(detections)} objects:")
-                        for det in detections:
-                            print(f"  - {det['class']}: {det['confidence']:.2f} at {det['center']}")
-                
-                cv2.imshow('cam', frame)
-                frame_count += 1
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-        else:
-            print('Camera not opened')
+    print("Starting detection... Press 'q' to quit")
+    
+    for frame in sony_cam.stream_frames():
+        if detector:
+            detections = detector.detect_objects(frame)
+            frame = detector.draw_detections(frame, detections)
+            
+            if frame_count % 30 == 0 and detections:
+                print(f"Detected {len(detections)} objects:")
+                for det in detections:
+                    print(f"  - {det['class']}: {det['confidence']:.2f} at {det['center']}")
+        
+        cv2.imshow('Sony A5000 WiFi Camera', frame)
+        frame_count += 1
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     
-    cap.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    print("Logitech C920 HD Pro Webcam with Object Detection")
-    print("Controls:")
-    print("  - 'q': Quit")
-    print("  - Detection will show bounding boxes around detected objects")
-    get_camera_with_detection(0, enable_detection=True)
+    print("Connecting to A5000 WiFi")
+    process = subprocess.Popen(["./connect_alpha5000.sh", os.getenv("A5000_SSID"), os.getenv("A5000_password")], 
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              text=True)
+    time.sleep(5) # takes a bit to establish connection
+    sony_cam = SonyA5000()
+    start_detection_generator(sony_cam, enable_detection=True)
