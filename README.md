@@ -1,10 +1,6 @@
-# Vision 
+# Vision fundamental
 
-Educational project on vision fundamentals.
-
-Perception tasks
-
-| Task | Description |
+| Perception Tasks | Description |
 |------|-------------|
 | Detection | What's in an image. Bounding box by frame. |
 | Classification | Label or top-k labels. |
