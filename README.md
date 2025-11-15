@@ -1,13 +1,32 @@
-# Bird's eye view
+# Vision 
 
-How to build this?
+Educational project on vision fundamentals.
 
-<img src="./bev.jpg" alt="Tesla Bird's Eye View" width="150">
+Perception tasks
 
-**Logitech HD Pro C920**  
-Diagonal FOV: 78°  
-Resolution: 1920x1080  
-Aspect Ratio: 16:9  
+| Task | Description |
+|------|-------------|
+| Detection | What's in an image. Bounding box by frame. |
+| Classification | Label or top-k labels. |
+| Segmentation | Mask every pixel per class found. |
+| Instance segmentation | Separates each object instance, one mask per object. |
+| Pose segmentation | Detect body joints like elbows, knees and provide coordinates. |
+| Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. |
+| Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. |
+| Re-identificatino (ReID) | Recognize a previously seen object or in another camera. Produces embedding vector + id match. |
+| Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. |
+| 3D Object detection | Detect objects in 3D space (position, orientation, size). 3D boxes in world coordinates. |
+| Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. |
+| Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. |
+| Action recognition | What's happening in video. Action labels + time segments. |
+| Temporal segmentation | Split by activity phases. Timeline segments. |
+| Anomaly detection | Detect unusual behavior, appearance or events. Anomaly score. |
+| Object tracking + prediction | Track + forecast future positions. Trajectory with predicted path. |
+
+This is the hardware I'm using:
+
+**Sony A5000**
+TODO: add specs
 
 **Jetson Orin**   
 GPU: 32 tensor cores, 1020Hhz  
@@ -17,9 +36,12 @@ Power: 25W
 
 <!-- Starts the camera -->
 curl -H "Content-Type: application/json" -d '{"method":"startRecMode","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
-
 <!-- Get available api -->
 curl -H "Content-Type: application/json" -d '{"method":"getAvailableApiList","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
+<!-- Starts live view -->
+curl -H "Content-Type: application/json" -d '{"method":"startLiveview","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
+<!-- Stops live view -->
+curl -H "Content-Type: application/json" -d '{"method":"stopLiveview","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
 
 **API Methods on startRecMode**
 - `getVersions`
@@ -44,8 +66,3 @@ curl -H "Content-Type: application/json" -d '{"method":"getAvailableApiList","pa
 - `getAvailableShootMode`
 - `getSupportedShootMode`
 - `getSupportedFlashMode`
-
-<!-- Starts live view -->
-curl -H "Content-Type: application/json" -d '{"method":"startLiveview","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
-
-curl -H "Content-Type: application/json" -d '{"method":"stopLiveview","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
