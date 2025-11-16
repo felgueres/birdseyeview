@@ -53,12 +53,15 @@ class ObjectDetector:
             class_id = detection['class_id']
             center = detection['center']
             color = self.colors[class_id % len(self.colors)]
+            label = f"{class_name}: {confidence:.2f}"
+            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
+            cv2.rectangle(annotated_frame, (bbox[0], bbox[1] - label_size[1] - 10), (bbox[0] + label_size[0], bbox[1]), color, -1)
+            cv2.putText(annotated_frame, label, (bbox[0], bbox[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-            if 'mask' in detection:
-                mask = detection['mask']
+            if 'mask' in detection and self.config.enable_mask:
+                mask=detection['mask']
                 if mask.shape != frame.shape[:2]:
                     mask = cv2.resize(mask, (frame.shape[1], frame.shape[0]))
-                
                 mask_binary = (mask > 0.5).astype(np.uint8)
                 colored_mask = np.zeros_like(annotated_frame)
                 colored_mask[:] = color
@@ -68,18 +71,8 @@ class ObjectDetector:
                     colored_mask[mask_indices], 0.4, 0
                 )
 
-            cv2.rectangle(annotated_frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
-            cv2.circle(annotated_frame, center, 5, color, -1)
-
-            label = f"{class_name}: {confidence:.2f}"
-            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
-            cv2.rectangle(annotated_frame, 
-                         (bbox[0], bbox[1] - label_size[1] - 10),
-                         (bbox[0] + label_size[0], bbox[1]),
-                         color, -1)
-
-            cv2.putText(annotated_frame, label, 
-                       (bbox[0], bbox[1] - 5),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            if self.config.enable_box:
+                cv2.rectangle(annotated_frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
+                cv2.circle(annotated_frame, center, 5, color, -1)
 
         return annotated_frame
