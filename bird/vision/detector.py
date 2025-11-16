@@ -120,3 +120,46 @@ class ObjectDetector:
                 cv2.circle(annotated_frame, center, 5, color, -1)
 
         return annotated_frame
+    
+    def draw_tracks(self, frame: np.ndarray, tracked_objects: List[Dict]) -> np.ndarray:
+        """Draw tracking information including IDs and trajectories"""
+        annotated_frame = frame.copy()
+        
+        for obj in tracked_objects:
+            track_id = obj['track_id']
+            bbox = obj['bbox']
+            center = obj['center']
+            class_name = obj['class']
+            confidence = obj['confidence']
+            trajectory = obj.get('trajectory', [])
+            
+            # Color based on track ID (consistent color per track)
+            color = self.colors[track_id % len(self.colors)]
+            
+            # Draw bounding box
+            cv2.rectangle(annotated_frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
+            
+            # Draw track ID and class
+            label = f"ID:{track_id} {class_name}: {confidence:.2f}"
+            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+            cv2.rectangle(annotated_frame, 
+                         (bbox[0], bbox[1] - label_size[1] - 10),
+                         (bbox[0] + label_size[0], bbox[1]),
+                         color, -1)
+            cv2.putText(annotated_frame, label, 
+                       (bbox[0], bbox[1] - 5),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            
+            # Draw trajectory
+            if self.config.draw_trajectories and len(trajectory) > 1:
+                points = np.array([(int(x), int(y)) for x, y, _ in trajectory], dtype=np.int32)
+                cv2.polylines(annotated_frame, [points], False, color, 2)
+                
+                # Draw dots along trajectory
+                for x, y, _ in trajectory[-10:]:  # Last 10 points
+                    cv2.circle(annotated_frame, (int(x), int(y)), 2, color, -1)
+            
+            # Draw center point
+            cv2.circle(annotated_frame, center, 5, color, -1)
+        
+        return annotated_frame
