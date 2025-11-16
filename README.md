@@ -9,7 +9,7 @@
 | Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. | X |
 | Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X |
 | Temporal segmentation | Split by activity phases. Timeline segments. | |
-| Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. | |
+| Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. | X |
 | Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. | |
 | Action recognition | What's happening in video. Action labels + time segments. | |
 | Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. | |
@@ -68,3 +68,23 @@ curl -H "Content-Type: application/json" -d '{"method":"stopLiveview","params":[
 
 **Applications**
 - Automate finding key moments
+
+
+## LVM setup
+
+```bash
+brew install ollama
+brew services start ollama
+```
+
+Pull a model
+
+```bash
+ollama pull llava:7b
+
+# If 16GB+ RAM:
+ollama pull llava:13b
+```
+
+## Notes
+- Seems like all processors have a) calculate, b) draw methods, maybe that's a better refactor here

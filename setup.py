@@ -15,6 +15,7 @@ setup(
         "ultralytics>=8.0.0",
         "torch>=1.9.0",       
         "torchvision>=0.10.0",
-        "python-dotenv"
+        "python-dotenv",
+        "ollama"  # For local LLaVA scene graph generation
     ] 
 )
