@@ -24,7 +24,15 @@ fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     WIFI_INTERFACE=$(networksetup -listallhardwareports | grep -A 1 "Wi-Fi" | grep "Device:" | awk '{print $2}')
-    echo "NetworkInterface: $WIFI_INTERFACE"
+    # Get current network
+    CURRENT_NETWORK=$(networksetup -getairportnetwork "$WIFI_INTERFACE" | cut -d: -f2 | xargs)
+    
+    if [ -n "$CURRENT_NETWORK" ] && [ "$CURRENT_NETWORK" != "You are not associated with an AirPort network." ]; then
+        echo "Disconnecting from: $CURRENT_NETWORK"
+        # Use airport utility to disconnect (keeps WiFi on)
+        sudo /System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -z
+        sleep 1
+    fi
     networksetup -setairportnetwork "$WIFI_INTERFACE" "$CAMERA_SSID" "$CAMERA_PASSWORD"
     echo "Connected to $CAMERA_SSID"
 else
