@@ -1,4 +1,5 @@
 import subprocess
+from bird.config import VisionConfig
 from bird.vision.detector import ObjectDetector
 import cv2
 import requests
@@ -70,17 +71,9 @@ class SonyA5000:
                 if frame is not None:
                     yield frame
 
-def start_detection_generator(sony_cam, enable_detection=True, model_size: str = 'yolov8n.pt'):
-    """Detection using generator"""
-    
-    detector = None
-
-    if enable_detection: 
-        detector = ObjectDetector(model_size=model_size, confidence_threshold=0.5)
-    
+def start_detection_generator(sony_cam, vision_config: VisionConfig):
+    detector = ObjectDetector(vision_config=vision_config)
     frame_count = 0
-    print("Starting detection... Press 'q' to quit")
-    
     for frame in sony_cam.stream_frames():
         if detector:
             detections = detector.detect_objects(frame)
@@ -99,6 +92,8 @@ def start_detection_generator(sony_cam, enable_detection=True, model_size: str =
     
     cv2.destroyAllWindows()
 
+
+
 if __name__ == "__main__":
     print("Connecting to A5000 WiFi")
     process = subprocess.Popen(["./connect_alpha5000.sh", os.getenv("A5000_SSID"), os.getenv("A5000_password")], 
@@ -106,6 +101,8 @@ if __name__ == "__main__":
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
                               text=True)
-    time.sleep(5) # takes a bit to establish connection
+    time.sleep(5)
+
     sony_cam = SonyA5000()
-    start_detection_generator(sony_cam, enable_detection=True)
+    vision_config = VisionConfig()
+    start_detection_generator(sony_cam, vision_config=vision_config)
