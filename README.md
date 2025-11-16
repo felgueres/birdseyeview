@@ -4,7 +4,6 @@
 |------|-------------|-------------|
 | Detection | What's in an image. Bounding box by frame. | Yes |
 | Classification | Label or top-k labels. | Yes |
-| Instance segmentation | Separates each object instance, one mask per object. | Yes |
 | Segmentation | Mask every pixel per class found. | |
 | Pose segmentation | Detect body joints like elbows, knees and provide coordinates. | |
 | Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. | |
