@@ -1,6 +1,7 @@
 import subprocess
 from bird.config import VisionConfig
 from bird.vision.detector import ObjectDetector
+from bird.vision.optical_flow import OpticalFlowTracker
 import cv2
 import requests
 import numpy as np
@@ -73,8 +74,11 @@ class SonyA5000:
 
 def start_detection_generator(sony_cam, vision_config: VisionConfig):
     detector = ObjectDetector(vision_config=vision_config)
+    flow_tracker = OpticalFlowTracker(method=vision_config.optical_flow_method) if vision_config.enable_optical_flow else None
+    
     frame_count = 0
     for frame in sony_cam.stream_frames():
+        # Object detection
         if detector:
             detections = detector.detect_objects(frame)
             frame = detector.draw_detections(frame, detections)
@@ -83,6 +87,27 @@ def start_detection_generator(sony_cam, vision_config: VisionConfig):
                 print(f"Detected {len(detections)} objects:")
                 for det in detections:
                     print(f"  - {det['class']}: {det['confidence']:.2f} at {det['center']}")
+        
+        # Optical flow
+        if vision_config.enable_optical_flow: 
+            if vision_config.optical_flow_method == 'lucas_kanade':
+                old_pts, new_pts = flow_tracker.compute_sparse_flow(frame)
+                print(old_pts, new_pts)
+                if old_pts is not None and new_pts is not None:
+                    frame = flow_tracker.draw_sparse_flow(frame, old_pts, new_pts)
+                    if frame_count % 30 == 0:
+                        stats = flow_tracker.get_flow_statistics(old_points=old_pts, new_points=new_pts)
+                        print(f"Optical Flow - Motion energy: {stats['motion_energy']:.2f}, Tracked points: {stats['num_tracked_points']}")
+                else:
+                    print("No detected old and new pts")
+            else:  # farneback
+                flow = flow_tracker.compute_dense_flow(frame)
+                if flow is not None:
+                    frame = flow_tracker.draw_dense_flow(frame, flow)
+                    
+                    if frame_count % 30 == 0:
+                        stats = flow_tracker.get_flow_statistics(flow=flow)
+                        print(f"Optical Flow - Motion energy: {stats['motion_energy']:.2f}, Mean magnitude: {stats['mean_magnitude']:.2f}")
         
         cv2.imshow('Sony A5000 WiFi Camera', frame)
         frame_count += 1

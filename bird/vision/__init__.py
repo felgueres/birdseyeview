@@ -1,6 +1,7 @@
 from .detector import ObjectDetector
+from .optical_flow import OpticalFlowTracker
 
-__all__ = ['ObjectDetector']
+__all__ = ['ObjectDetector', 'OpticalFlowTracker']
 
 # Common object classes that might be useful for birdview/surveillance
 COMMON_CLASSES = [

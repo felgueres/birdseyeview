@@ -63,6 +63,8 @@ class ObjectDetector:
     
     def draw_detections(self, frame: np.ndarray, detections: List[Dict]) -> np.ndarray:
         annotated_frame = frame.copy()
+        if not any([self.config.enable_pose, self.config.enable_mask, self.config.enable_box, self.config.enable_classifier]):
+            return frame
         for detection in detections:
             bbox = detection['bbox']
             class_name = detection['class']
@@ -71,11 +73,10 @@ class ObjectDetector:
             center = detection['center']
             color = self.colors[class_id % len(self.colors)]
             label = f"{class_name}: {confidence:.2f}"
-            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
-            
-            # Classifier labels 
-            cv2.rectangle(annotated_frame, (bbox[0], bbox[1] - label_size[1] - 10), (bbox[0] + label_size[0], bbox[1]), color, -1)
-            cv2.putText(annotated_frame, label, (bbox[0], bbox[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            if self.config.enable_classifier:
+                label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
+                cv2.rectangle(annotated_frame, (bbox[0], bbox[1] - label_size[1] - 10), (bbox[0] + label_size[0], bbox[1]), color, -1)
+                cv2.putText(annotated_frame, label, (bbox[0], bbox[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
             # Pose point 
             if 'keypoints' in detection and self.config.enable_pose:

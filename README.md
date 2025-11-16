@@ -2,11 +2,11 @@
 
 | Perception Tasks | Description | Implemented |
 |------|-------------|-------------|
-| Detection | What's in an image. Bounding box by frame. | Yes |
-| Classification | Label or top-k labels. | Yes |
-| Segmentation | Mask every pixel per class found. | |
-| Pose segmentation | Detect body joints like elbows, knees and provide coordinates. | |
-| Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. | |
+| Detection | What's in an image. Bounding box by frame. | X |
+| Classification | Label or top-k labels. | X |
+| Segmentation | Mask every pixel per class found. | X |
+| Pose segmentation | Detect body joints like elbows, knees and provide coordinates. | X |
+| Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. | X |
 | Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | |
 | Re-identificatino (ReID) | Recognize a previously seen object or in another camera. Produces embedding vector + id match. | |
 | Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. | |
@@ -29,6 +29,10 @@ CPU: 6-core Arm 64-bit CPU 1.5Mb L2 + 4MB L3, 1.7Ghz
 Memory: 8GB 128-bit LPDDR5 102 GB/s  
 Power: 25W  
 
+To run:
+$ python3 -m bird.core.camera
+
+To inspect camera:
 <!-- Starts the camera -->
 curl -H "Content-Type: application/json" -d '{"method":"startRecMode","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
 <!-- Get available api -->
