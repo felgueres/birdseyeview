@@ -1,23 +1,23 @@
 # Vision fundamental
 
-| Perception Tasks | Description |
-|------|-------------|
-| Detection | What's in an image. Bounding box by frame. |
-| Classification | Label or top-k labels. |
-| Segmentation | Mask every pixel per class found. |
-| Instance segmentation | Separates each object instance, one mask per object. |
-| Pose segmentation | Detect body joints like elbows, knees and provide coordinates. |
-| Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. |
-| Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. |
-| Re-identificatino (ReID) | Recognize a previously seen object or in another camera. Produces embedding vector + id match. |
-| Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. |
-| 3D Object detection | Detect objects in 3D space (position, orientation, size). 3D boxes in world coordinates. |
-| Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. |
-| Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. |
-| Action recognition | What's happening in video. Action labels + time segments. |
-| Temporal segmentation | Split by activity phases. Timeline segments. |
-| Anomaly detection | Detect unusual behavior, appearance or events. Anomaly score. |
-| Object tracking + prediction | Track + forecast future positions. Trajectory with predicted path. |
+| Perception Tasks | Description | Implemented |
+|------|-------------|-------------|
+| Detection | What's in an image. Bounding box by frame. | Yes |
+| Classification | Label or top-k labels. | Yes |
+| Instance segmentation | Separates each object instance, one mask per object. | Yes |
+| Segmentation | Mask every pixel per class found. | |
+| Pose segmentation | Detect body joints like elbows, knees and provide coordinates. | |
+| Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. | |
+| Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | |
+| Re-identificatino (ReID) | Recognize a previously seen object or in another camera. Produces embedding vector + id match. | |
+| Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. | |
+| 3D Object detection | Detect objects in 3D space (position, orientation, size). 3D boxes in world coordinates. | |
+| Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. | |
+| Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. | |
+| Action recognition | What's happening in video. Action labels + time segments. | |
+| Temporal segmentation | Split by activity phases. Timeline segments. | |
+| Anomaly detection | Detect unusual behavior, appearance or events. Anomaly score. | |
+| Object tracking + prediction | Track + forecast future positions. Trajectory with predicted path. | |
 
 This is the hardware I'm using:
 
