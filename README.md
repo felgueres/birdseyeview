@@ -35,47 +35,27 @@ Power: 25W
 
 Run with **webcam** (default):
 ```bash
-python3 -m bird.core.camera                    # Webcam with tracking only
-python3 -m bird.core.camera --camera-index 1   # Use webcam at index 1
+python3 -m bird.cli                    # Webcam with tracking only
+python3 -m bird.cli --camera-index 1   # Use webcam at index 1
 ```
 
 Run with **Sony A5000**:
 ```bash
-python3 -m bird.core.camera sony
+python3 -m bird.cli sony
 ```
-
-### With Scene Graph (VLM Analysis + Graph Visualization)
-
-The scene graph feature analyzes frames with a VLM and displays:
-- **Left panel:** Live camera feed
-- **Right panel:** Interactive graph visualization showing objects (nodes) and relationships (edges)
 
 Use **Ollama** (local, free):
 ```bash
-python3 -m bird.core.camera --enable-scene-graph                     # Uses llava:7b (default)
-python3 -m bird.core.camera --enable-scene-graph --model llava:13b   # Auto-detects ollama provider
+python3 -m bird.cli --enable-scene-graph                     # Uses llava:7b (default)
+python3 -m bird.cli --enable-scene-graph --model llava:13b   # Auto-detects ollama provider
 ```
 
 Use **OpenAI GPT-4o** (API, requires OPENAI_API_KEY):
 ```bash
 export OPENAI_API_KEY="sk-..."
-python3 -m bird.core.camera --enable-scene-graph --model gpt-4o       # Auto-detects openai provider
-python3 -m bird.core.camera --enable-scene-graph --model gpt-4o-mini  # Cheaper option
+python3 -m bird.cli --enable-scene-graph --model gpt-4o       # Auto-detects openai provider
+python3 -m bird.cli --enable-scene-graph --model gpt-4o-mini  # Cheaper option
 ```
-
-**Graph Visualization Features:**
-- 🔴 Red nodes = People
-- 🔵 Cyan nodes = Technology (computers, monitors, screens)
-- 🟢 Green nodes = Furniture (chairs, desks, tables)
-- 🟡 Yellow nodes = Other objects
-- Arrows show relationships with labeled edges
-
-The system automatically detects the VLM provider based on the model name:
-- Models starting with `gpt-` → OpenAI
-- Models with `:` (like `llava:7b`) → Ollama
-- You can still explicitly specify `--vlm ollama` or `--vlm openai` if needed
-
-### Options
 
 ```bash
 --camera-index N          # Webcam index (default: 0)
@@ -120,32 +100,15 @@ curl -H "Content-Type: application/json" -d '{"method":"stopLiveview","params":[
 - `getSupportedShootMode`
 - `getSupportedFlashMode`
 
-**Applications**
-- Automate finding key moments
 
+## VLM 
 
-## VLM Setup
-
-### Option 1: Ollama (Local, Free)
+Uses llava or gpt4o
 
 ```bash
 brew install ollama
 brew services start ollama
-
-# Pull a model
-ollama pull llava:7b
-
-# If 16GB+ RAM:
-ollama pull llava:13b
-```
-
-### Option 2: OpenAI (API, Paid)
-
-```bash
-pip install openai
-
-# Set your API key
-export OPENAI_API_KEY="sk-..."
+ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
 ```
 
 ## Notes
