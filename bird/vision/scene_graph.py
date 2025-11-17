@@ -12,14 +12,20 @@ from typing import List, Dict, Optional, Tuple
 import json
 import time
 
-# Optional Ollama client for VLM enhancement
+# Optional VLM clients
 try:
     import ollama
     OLLAMA_AVAILABLE = True
 except ImportError:
     OLLAMA_AVAILABLE = False
-    print("Warning: ollama not installed. Run: pip install ollama")
-    print("Scene graphs will use rule-based relationships only.")
+
+try:
+    from openai import OpenAI
+    import base64
+    import os
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 
 class SceneGraphOntology:
@@ -79,31 +85,59 @@ class SceneGraphBuilder:
     def __init__(
         self,
         use_vlm: bool = False,
+        vlm_provider: str = "ollama",  # 'ollama' or 'openai'
         vlm_model: str = "llava:7b",
         vlm_interval: int = 30,  # Run VLM every N frames
         near_threshold: float = 150.0,  # Pixels for "near" relationship
         motion_threshold: float = 5.0,   # Pixels/frame for motion detection
     ):
-        self.use_vlm = use_vlm and OLLAMA_AVAILABLE
+        self.vlm_provider = vlm_provider.lower()
         self.vlm_model = vlm_model
         self.vlm_interval = vlm_interval
         self.near_threshold = near_threshold
         self.motion_threshold = motion_threshold
+        
+        # Check if VLM is available
+        if self.vlm_provider == "ollama":
+            self.use_vlm = use_vlm and OLLAMA_AVAILABLE
+            if use_vlm and not OLLAMA_AVAILABLE:
+                print("Ollama not available. Install: pip install ollama")
+                self.use_vlm = False
+        elif self.vlm_provider == "openai":
+            self.use_vlm = use_vlm and OPENAI_AVAILABLE
+            if use_vlm and not OPENAI_AVAILABLE:
+                print("OpenAI not available. Install: pip install openai")
+                self.use_vlm = False
+            if self.use_vlm:
+                self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                if not os.getenv("OPENAI_API_KEY"):
+                    print("OPENAI_API_KEY not set in environment")
+                    self.use_vlm = False
+        else:
+            print(f"Unknown VLM provider: {self.vlm_provider}")
+            self.use_vlm = False
         
         self.frame_count = 0
         self.cached_semantic_relationships = []
         self.last_vlm_time = 0
         
         if self.use_vlm:
-            self._check_ollama()
+            self._check_vlm_ready()
     
-    def _check_ollama(self):
-        """Check if Ollama is running and model is available"""
-        models = ollama.list()
-        model_names = [m.model for m in models.get('models', [])]
-        if self.vlm_model not in model_names:
-            raise ValueError(f"Model {self.vlm_model} not found")
-        print(f"Running {self.vlm_model}")
+    def _check_vlm_ready(self):
+        """Check if VLM is ready to use"""
+        if self.vlm_provider == "ollama":
+            try:
+                models = ollama.list()
+                model_names = [m.model for m in models.get('models', [])]
+                if self.vlm_model not in model_names:
+                    raise ValueError(f"Ollama model {self.vlm_model} not found. Run: ollama pull {self.vlm_model}")
+                print(f"✓ Using Ollama {self.vlm_model}")
+            except Exception as e:
+                print(f"⚠️  Ollama error: {e}")
+                self.use_vlm = False
+        elif self.vlm_provider == "openai":
+            print(f"✓ Using OpenAI {self.vlm_model}")
     
     def build_graph(
         self,
@@ -154,7 +188,15 @@ class SceneGraphBuilder:
         if not self.use_vlm:
             return {'objects': [], 'relationships': []}
         
-        # Encode frame to JPEG
+        if self.vlm_provider == "ollama":
+            return self._analyze_with_ollama(frame)
+        elif self.vlm_provider == "openai":
+            return self._analyze_with_openai(frame)
+        else:
+            return {'objects': [], 'relationships': []}
+    
+    def _analyze_with_ollama(self, frame: np.ndarray) -> Dict:
+        """Analyze scene using Ollama"""
         _, buffer = cv2.imencode('.jpg', frame)
         
         prompt = """Analyze this image and describe the scene as a structured graph.
@@ -186,7 +228,6 @@ class SceneGraphBuilder:
             )
             elapsed = time.time() - start
             
-            # Parse response
             content = response['message']['content']
             
             # Extract JSON (handle markdown code blocks)
@@ -196,20 +237,91 @@ class SceneGraphBuilder:
                 content = content.split('```')[1].split('```')[0]
             
             data = json.loads(content.strip())
-            
             objects = data.get('objects', [])
             relationships = data.get('relationships', [])
             
-            print(f"  VLM found {len(objects)} objects and {len(relationships)} relationships in {elapsed:.2f}s")
+            print(f"  Ollama found {len(objects)} objects and {len(relationships)} relationships in {elapsed:.2f}s")
             return {'objects': objects, 'relationships': relationships}
             
         except json.JSONDecodeError as e:
-            print(f"  ⚠️  Failed to parse VLM response: {e}")
+            print(f"  ⚠️  Failed to parse Ollama response: {e}")
             if 'content' in locals():
                 print(f"  Raw response: {content[:200]}")
             return {'objects': [], 'relationships': []}
         except Exception as e:
-            print(f"  ⚠️  VLM error: {e}")
+            print(f"  ⚠️  Ollama error: {e}")
+            return {'objects': [], 'relationships': []}
+    
+    def _analyze_with_openai(self, frame: np.ndarray) -> Dict:
+        """Analyze scene using OpenAI GPT-4o"""
+        breakpoint()
+        # Encode frame to base64
+        _, buffer = cv2.imencode('.jpg', frame)
+        base64_image = base64.b64encode(buffer.tobytes()).decode('utf-8')
+        
+        prompt = """Analyze this image and describe the scene as a structured graph.
+
+Identify all significant objects, their states/attributes, and relationships between them.
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "objects": [
+    {"id": 0, "class": "person", "attributes": ["moving", "standing"]},
+    {"id": 1, "class": "car", "attributes": ["stationary", "red"]}
+  ],
+  "relationships": [
+    {"subject": 0, "predicate": "near", "object": 1}
+  ]
+}
+
+Common attributes: moving, stationary, sitting, standing, walking, running, open, closed
+Common relationships: near, holding, carrying, wearing, riding, touching, facing, looking_at
+
+If the scene is empty, return: {"objects": [], "relationships": []}
+"""
+        
+        try:
+            start = time.time()
+            response = self.openai_client.chat.completions.create(
+                model=self.vlm_model,
+                messages=[{
+                    'role': 'user',
+                    'content': [
+                        {'type': 'text', 'text': prompt},
+                        {
+                            'type': 'image_url',
+                            'image_url': {
+                                'url': f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }],
+                max_tokens=1000
+            )
+            elapsed = time.time() - start
+            
+            content = response.choices[0].message.content
+            
+            # Extract JSON (handle markdown code blocks)
+            if '```json' in content:
+                content = content.split('```json')[1].split('```')[0]
+            elif '```' in content:
+                content = content.split('```')[1].split('```')[0]
+            
+            data = json.loads(content.strip())
+            objects = data.get('objects', [])
+            relationships = data.get('relationships', [])
+            
+            print(f"  GPT-4o found {len(objects)} objects and {len(relationships)} relationships in {elapsed:.2f}s")
+            return {'objects': objects, 'relationships': relationships}
+            
+        except json.JSONDecodeError as e:
+            print(f"  ⚠️  Failed to parse GPT-4o response: {e}")
+            if 'content' in locals():
+                print(f"  Raw response: {content[:200]}")
+            return {'objects': [], 'relationships': []}
+        except Exception as e:
+            print(f"  ⚠️  GPT-4o error: {e}")
             return {'objects': [], 'relationships': []}
     
     def format_graph_natural_language(self, scene_graph: Dict) -> str:

@@ -31,16 +31,48 @@ Power: 25W
 
 ## Usage
 
+### Basic Usage
+
 Run with **webcam** (default):
 ```bash
-python3 -m bird.core.camera webcam      # Use default webcam (index 0)
-python3 -m bird.core.camera webcam 1    # Use webcam at index 1
-python3 -m bird.core.camera             # Defaults to webcam
+python3 -m bird.core.camera                    # Webcam with tracking only
+python3 -m bird.core.camera --camera-index 1   # Use webcam at index 1
 ```
 
 Run with **Sony A5000**:
 ```bash
 python3 -m bird.core.camera sony
+```
+
+### With Scene Graph (VLM Analysis)
+
+Use **Ollama** (local, free):
+```bash
+python3 -m bird.core.camera --enable-scene-graph                     # Uses llava:7b (default)
+python3 -m bird.core.camera --enable-scene-graph --model llava:13b   # Auto-detects ollama provider
+```
+
+Use **OpenAI GPT-4o** (API, requires OPENAI_API_KEY):
+```bash
+export OPENAI_API_KEY="sk-..."
+python3 -m bird.core.camera --enable-scene-graph --model gpt-4o       # Auto-detects openai provider
+python3 -m bird.core.camera --enable-scene-graph --model gpt-4o-mini  # Cheaper option
+```
+
+The system automatically detects the VLM provider based on the model name:
+- Models starting with `gpt-` → OpenAI
+- Models with `:` (like `llava:7b`) → Ollama
+- You can still explicitly specify `--vlm ollama` or `--vlm openai` if needed
+
+### Options
+
+```bash
+--camera-index N          # Webcam index (default: 0)
+--vlm [ollama|openai]     # VLM provider (default: ollama)
+--model MODEL_NAME        # Model name (default: llava:7b for ollama, gpt-4o for openai)
+--enable-scene-graph      # Enable VLM scene graph analysis
+--enable-tracking         # Enable object tracking (enabled by default)
+--enable-box              # Enable bounding boxes (enabled by default)
 ```
 
 To inspect camera:
@@ -81,20 +113,28 @@ curl -H "Content-Type: application/json" -d '{"method":"stopLiveview","params":[
 - Automate finding key moments
 
 
-## LVM setup
+## VLM Setup
+
+### Option 1: Ollama (Local, Free)
 
 ```bash
 brew install ollama
 brew services start ollama
-```
 
-Pull a model
-
-```bash
+# Pull a model
 ollama pull llava:7b
 
 # If 16GB+ RAM:
 ollama pull llava:13b
+```
+
+### Option 2: OpenAI (API, Paid)
+
+```bash
+pip install openai
+
+# Set your API key
+export OPENAI_API_KEY="sk-..."
 ```
 
 ## Notes

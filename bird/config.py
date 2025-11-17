@@ -26,6 +26,7 @@ class VisionConfig:
         self.draw_trajectories = True  # Draw trajectory paths
         # Scene graph parameters
         self.scene_graph_use_vlm = True  # Use VLM for semantic relationships
-        self.scene_graph_vlm_model = 'llava:7b'  # Ollama model name
+        self.scene_graph_vlm_provider = 'ollama'  # Options: 'ollama', 'openai'
+        self.scene_graph_vlm_model = 'llava:7b'  # Model name (ollama: 'llava:7b', openai: 'gpt-4o', 'gpt-4o-mini')
         self.scene_graph_vlm_interval = 30  # Run VLM every N frames
         self.scene_graph_show_spatial = False  # Draw spatial relationships (can be cluttered)

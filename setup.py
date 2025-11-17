@@ -16,6 +16,7 @@ setup(
         "torch>=1.9.0",       
         "torchvision>=0.10.0",
         "python-dotenv",
-        "ollama"  # For local LLaVA scene graph generation
+        "ollama",  # For local LLaVA scene graph generation
+        "openai"
     ] 
 )

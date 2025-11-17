@@ -116,6 +116,7 @@ def start_vision_pipeline(camera, vision_config: VisionConfig):
     ) if vision_config.enable_tracking else None
     scene_graph_builder = SceneGraphBuilder(
         use_vlm=vision_config.scene_graph_use_vlm,
+        vlm_provider=vision_config.scene_graph_vlm_provider,
         vlm_model=vision_config.scene_graph_vlm_model,
         vlm_interval=vision_config.scene_graph_vlm_interval
     ) if vision_config.enable_scene_graph else None
@@ -176,12 +177,48 @@ def start_vision_pipeline(camera, vision_config: VisionConfig):
 
 
 if __name__ == "__main__":
-    import sys
+    import argparse
     
-    # Choose camera source
-    camera_source = sys.argv[1] if len(sys.argv) > 1 else "webcam"
+    parser = argparse.ArgumentParser(description='BirdView - Computer Vision Pipeline')
+    parser.add_argument('camera', nargs='?', default='webcam', choices=['webcam', 'sony'],
+                        help='Camera source (default: webcam)')
+    parser.add_argument('--camera-index', type=int, default=0,
+                        help='Webcam index (default: 0)')
+    parser.add_argument('--vlm', choices=['ollama', 'openai'], default=None,
+                        help='VLM provider: ollama (local) or openai (API). Auto-detected from model if not specified.')
+    parser.add_argument('--model', default=None,
+                        help='VLM model name (default: llava:7b for ollama, gpt-4o for openai)')
+    parser.add_argument('--enable-scene-graph', action='store_true',
+                        help='Enable scene graph generation')
+    parser.add_argument('--enable-tracking', action='store_true', default=False,
+                        help='Enable object tracking (default: enabled)')
+    parser.add_argument('--enable-box', action='store_true', default=False,
+                        help='Enable bounding box detection (default: enabled)')
     
-    if camera_source == "sony":
+    args = parser.parse_args()
+    
+    # Smart VLM provider and model detection
+    if args.model and not args.vlm:
+        # Auto-detect provider based on model name
+        if args.model.startswith('gpt-'):
+            args.vlm = 'openai'
+        elif args.model.startswith('llava') or ':' in args.model:
+            args.vlm = 'ollama'
+        else:
+            args.vlm = 'ollama'  # default
+    elif args.vlm and not args.model:
+        # Set default model based on provider
+        if args.vlm == 'openai':
+            args.model = 'gpt-4o'
+        else:
+            args.model = 'llava:7b'
+    elif not args.vlm and not args.model:
+        # Both not specified, use defaults
+        args.vlm = 'ollama'
+        args.model = 'llava:7b'
+    
+    # Setup camera
+    if args.camera == "sony":
         print("Connecting to Sony A5000 via WiFi...")
         process = subprocess.Popen(
             ["./connect_alpha5000.sh", os.getenv("A5000_SSID"), os.getenv("A5000_password")], 
@@ -192,20 +229,24 @@ if __name__ == "__main__":
         )
         time.sleep(5)
         camera = SonyA5000()
-
-    elif camera_source == "webcam":
+    else:  # webcam
         print("Using webcam...")
-        camera_index = int(sys.argv[2]) if len(sys.argv) > 2 else 0
-        camera = Webcam(camera_index=camera_index)
-
-    else:
-        print(f"Unknown camera source: {camera_source}")
-        print("Usage: python -m bird.core.camera [webcam|sony] [webcam_index]")
-        print("Examples:")
-        print("  python -m bird.core.camera webcam      # Use default webcam (index 0)")
-        print("  python -m bird.core.camera webcam 1    # Use webcam at index 1")
-        print("  python -m bird.core.camera sony        # Use Sony A5000")
-        sys.exit(1)
+        camera = Webcam(camera_index=args.camera_index)
     
-    vision_config = VisionConfig(enable_scene_graph=True, enable_tracking=True)
+    # Configure vision pipeline
+    vision_config = VisionConfig(
+        enable_scene_graph=args.enable_scene_graph, 
+        enable_tracking=args.enable_tracking,
+        enable_box=args.enable_box
+    )
+    vision_config.scene_graph_vlm_provider = args.vlm
+    vision_config.scene_graph_vlm_model = args.model
+    
+    print(f"\n{'='*60}")
+    print(f"Camera: {args.camera}")
+    if args.enable_scene_graph:
+        print(f"VLM: {args.vlm} ({args.model})")
+    print(f"Tracking: {args.enable_tracking}")
+    print(f"{'='*60}\n")
+    
     start_vision_pipeline(camera, vision_config=vision_config)
