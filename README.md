@@ -1,6 +1,6 @@
 # Vision 
 
-| Perception Tasks | Description | Implemented |
+| Tasks | Description | Implemented |
 |------|-------------|-------------|
 | Detection | What's in an image. Bounding box by frame. | X |
 | Classification | Label or top-k labels. | X |
