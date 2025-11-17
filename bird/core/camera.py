@@ -21,7 +21,6 @@ class Webcam:
         if not self.cap.isOpened():
             raise Exception(f"Failed to open webcam at index {self.camera_index}")
         
-        # Get camera info
         width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = self.cap.get(cv2.CAP_PROP_FPS)
@@ -31,7 +30,7 @@ class Webcam:
             while True:
                 ret, frame = self.cap.read()
                 if not ret:
-                    print("⚠️  Failed to read frame from webcam")
+                    print("Failed to read frame from webcam")
                     break
                 yield frame
         finally:
@@ -75,7 +74,6 @@ class SonyA5000:
         for chunk in response.iter_content(chunk_size=8192):
             buffer += chunk
             
-            # Look for JPEG frames in buffer
             while True:
                 start = buffer.find(b'\xff\xd8')  # JPEG start
                 if start == -1:
@@ -85,7 +83,6 @@ class SonyA5000:
                 if end == -1:
                     break
                 
-                # Extract JPEG frame
                 jpeg_data = buffer[start:end + 2]
                 buffer = buffer[end + 2:]
                 

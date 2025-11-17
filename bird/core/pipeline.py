@@ -8,7 +8,7 @@ import cv2
 
 def start_vision_pipeline(camera, vision_config: VisionConfig):
     """
-    Main vision pipeline that processes camera frames.
+    Vision pipeline that processes camera frames.
     
     Orchestrates object detection, tracking, optical flow, and scene graph
     generation based on the provided configuration.

@@ -1,7 +1,5 @@
 """
 Scene Graph Generation
-
-Builds structured scene representations exclusively from VLM analysis.
 The VLM identifies objects, their attributes, and relationships between them.
 Scene graphs are generated periodically (every N frames) due to VLM latency.
 """
@@ -477,7 +475,6 @@ If the scene is empty, return: {"objects": [], "relationships": []}
         self,
         frame: np.ndarray,
         scene_graph: Dict,
-        show_spatial: bool = False,  # Unused, kept for API compatibility
     ) -> np.ndarray:
         """
         Draw scene graph visualization alongside the frame.
