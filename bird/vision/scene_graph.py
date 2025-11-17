@@ -112,9 +112,7 @@ class SceneGraphBuilder:
     ) -> Optional[Dict]:
         """
         Build scene graph exclusively from VLM analysis.
-        
         Only runs every vlm_interval frames. Returns None on non-VLM frames.
-        
         Returns:
             {
                 'frame_id': int,
@@ -140,7 +138,6 @@ class SceneGraphBuilder:
             'objects': vlm_scene.get('objects', []),
             'relationships': vlm_scene.get('relationships', []),
         }
-        
         self.frame_count += 1
         return scene_graph
     
@@ -161,25 +158,21 @@ class SceneGraphBuilder:
         _, buffer = cv2.imencode('.jpg', frame)
         
         prompt = """Analyze this image and describe the scene as a structured graph.
-
-Identify all significant objects, their states/attributes, and relationships between them.
-
-Respond ONLY with valid JSON in this exact format:
-{
-  "objects": [
-    {"id": 0, "class": "person", "attributes": ["moving", "standing"]},
-    {"id": 1, "class": "car", "attributes": ["stationary", "red"]}
-  ],
-  "relationships": [
-    {"subject": 0, "predicate": "near", "object": 1}
-  ]
-}
-
-Common attributes: moving, stationary, sitting, standing, walking, running, open, closed
-Common relationships: near, holding, carrying, wearing, riding, touching, facing, looking_at
-
-If the scene is empty, return: {"objects": [], "relationships": []}
-"""
+            Identify all significant objects, their states/attributes, and relationships between them.
+            Respond ONLY with valid JSON in this exact format:
+            {
+            "objects": [
+                {"id": 0, "class": "person", "attributes": ["moving", "standing"]},
+                {"id": 1, "class": "car", "attributes": ["stationary", "red"]}
+            ],
+            "relationships": [
+                {"subject": 0, "predicate": "near", "object": 1}
+            ]
+            }
+            Common attributes: moving, stationary, sitting, standing, walking, running, open, closed
+            Common relationships: near, holding, carrying, wearing, riding, touching, facing, looking_at
+            If the scene is empty, return: {"objects": [], "relationships": []}
+        """
         
         try:
             start = time.time()

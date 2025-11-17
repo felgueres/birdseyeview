@@ -1,5 +1,13 @@
 class VisionConfig:
-    def __init__(self, enable_box=True, enable_mask=False, enable_pose=False, enable_optical_flow=False, enable_classifier=False, enable_tracking=True, enable_scene_graph=False):
+    def __init__(self, 
+                enable_box=False, 
+                enable_mask=False, 
+                enable_pose=False, 
+                enable_optical_flow=False, 
+                enable_classifier=False, 
+                enable_tracking=False, 
+                enable_scene_graph=False):
+
         self.enable_box = enable_box
         self.enable_mask = enable_mask
         self.enable_pose = enable_pose

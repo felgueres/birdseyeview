@@ -29,8 +29,19 @@ CPU: 6-core Arm 64-bit CPU 1.5Mb L2 + 4MB L3, 1.7Ghz
 Memory: 8GB 128-bit LPDDR5 102 GB/s  
 Power: 25W  
 
-To run:
-$ python3 -m bird.core.camera
+## Usage
+
+Run with **webcam** (default):
+```bash
+python3 -m bird.core.camera webcam      # Use default webcam (index 0)
+python3 -m bird.core.camera webcam 1    # Use webcam at index 1
+python3 -m bird.core.camera             # Defaults to webcam
+```
+
+Run with **Sony A5000**:
+```bash
+python3 -m bird.core.camera sony
+```
 
 To inspect camera:
 <!-- Starts the camera -->
