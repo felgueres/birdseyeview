@@ -1,4 +1,4 @@
-# Vision fundamental
+# Vision 
 
 | Perception Tasks | Description | Implemented |
 |------|-------------|-------------|
@@ -18,41 +18,55 @@
 | 3D Object detection | Detect objects in 3D space (position, orientation, size). 3D boxes in world coordinates. | |
 | Re-identificatino (ReID) | Recognize a previously seen object or in another camera. Produces embedding vector + id match. | |
 
+## Project Structure
+
+```
+birdview/
+├── bird/                       # Main package
+│   ├── __init__.py
+│   ├── cli.py                  # Command-line interface entry point
+│   ├── config.py               # Configuration management
+│   ├── core/                   # Core components
+│   │   ├── __init__.py
+│   │   ├── camera.py           # Camera interfaces (webcam, Sony A5000)
+│   │   └── pipeline.py         # Vision processing pipeline
+│   └── vision/                 # Computer vision modules
+│       ├── __init__.py
+│       ├── detector.py         # Object detection (YOLO)
+│       ├── optical_flow.py     # Optical flow estimation
+│       ├── scene_graph.py      # Scene understanding with VLMs
+│       └── tracker.py          # Object tracking
+├── yolov8n.pt                  # YOLOv8 detection model
+├── yolov8n-seg.pt              # YOLOv8 segmentation model
+├── yolov8n-pose.pt             # YOLOv8 pose estimation model
+├── setup.py                    # Package installation
+├── connect_alpha5000.sh        # Sony A5000 connection script
+└── README.md
+```
+
+## Hardware
+
 This is the hardware I'm using:
 
 **Sony A5000**
 TODO: add specs
 
-**Jetson Orin**   
-GPU: 32 tensor cores, 1020Hhz  
-CPU: 6-core Arm 64-bit CPU 1.5Mb L2 + 4MB L3, 1.7Ghz  
-Memory: 8GB 128-bit LPDDR5 102 GB/s  
-Power: 25W  
-
 ## Usage
-
-### Basic Usage
 
 Run with **webcam** (default):
 ```bash
-python3 -m bird.cli                    # Webcam with tracking only
-python3 -m bird.cli --camera-index 1   # Use webcam at index 1
-```
-
-Run with **Sony A5000**:
-```bash
-python3 -m bird.cli sony
+python3 -m bird.cli                    
+python3 -m bird.cli --camera-index 1 
 ```
 
 Use **Ollama** (local, free):
 ```bash
-python3 -m bird.cli --enable-scene-graph                     # Uses llava:7b (default)
-python3 -m bird.cli --enable-scene-graph --model llava:13b   # Auto-detects ollama provider
+python3 -m bird.cli --enable-scene-graph                     # Uses llava:7b
+python3 -m bird.cli --enable-scene-graph --model llava:13b
 ```
 
 Use **OpenAI GPT-4o** (API, requires OPENAI_API_KEY):
 ```bash
-export OPENAI_API_KEY="sk-..."
 python3 -m bird.cli --enable-scene-graph --model gpt-4o       # Auto-detects openai provider
 python3 -m bird.cli --enable-scene-graph --model gpt-4o-mini  # Cheaper option
 ```
@@ -65,6 +79,9 @@ python3 -m bird.cli --enable-scene-graph --model gpt-4o-mini  # Cheaper option
 --enable-tracking         # Enable object tracking (enabled by default)
 --enable-box              # Enable bounding boxes (enabled by default)
 ```
+
+
+## A5000 
 
 To inspect camera:
 <!-- Starts the camera -->
@@ -100,7 +117,6 @@ curl -H "Content-Type: application/json" -d '{"method":"stopLiveview","params":[
 - `getSupportedShootMode`
 - `getSupportedFlashMode`
 
-
 ## VLM 
 
 Uses llava or gpt4o
@@ -112,4 +128,4 @@ ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
 ```
 
 ## Notes
-- Seems like all processors have a) calculate, b) draw methods, maybe that's a better refactor here
+- Vision tasks have a) calculate, b) draw methods, maybe there's a nice abstraction to make here
