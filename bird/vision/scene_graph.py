@@ -11,6 +11,11 @@ import cv2
 from typing import List, Dict, Optional, Tuple
 import json
 import time
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
+import networkx as nx
+from io import BytesIO
 
 # Optional VLM clients
 try:
@@ -254,7 +259,6 @@ class SceneGraphBuilder:
     
     def _analyze_with_openai(self, frame: np.ndarray) -> Dict:
         """Analyze scene using OpenAI GPT-4o"""
-        breakpoint()
         # Encode frame to base64
         _, buffer = cv2.imencode('.jpg', frame)
         base64_image = base64.b64encode(buffer.tobytes()).decode('utf-8')
@@ -361,6 +365,114 @@ If the scene is empty, return: {"objects": [], "relationships": []}
         
         return description
     
+    def _create_graph_visualization(self, scene_graph: Dict, width: int = 800, height: int = 600) -> np.ndarray:
+        """
+        Create a networkx graph visualization from the scene graph.
+        
+        Returns an image array that can be displayed.
+        """
+        objects = scene_graph.get('objects', [])
+        relationships = scene_graph.get('relationships', [])
+        
+        if not objects:
+            # Return blank image with "Empty scene" text
+            fig, ax = plt.subplots(figsize=(width/100, height/100), dpi=100)
+            ax.text(0.5, 0.5, 'Empty Scene', ha='center', va='center', 
+                   fontsize=20, color='gray')
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            ax.axis('off')
+            
+            buf = BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight', facecolor='white')
+            buf.seek(0)
+            img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+            buf.close()
+            plt.close(fig)
+            
+            img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+            return cv2.resize(img, (width, height))
+        
+        # Create networkx graph
+        G = nx.DiGraph()
+        
+        # Add nodes (objects)
+        for obj in objects:
+            obj_id = obj['id']
+            obj_class = obj['class']
+            attrs = obj.get('attributes', [])
+            
+            # Create label with class and attributes
+            label = f"{obj_class}\n#{obj_id}"
+            if attrs:
+                label += f"\n({', '.join(attrs[:2])})"  # Show first 2 attributes
+            
+            G.add_node(obj_id, label=label, obj_class=obj_class)
+        
+        # Add edges (relationships)
+        edge_labels = {}
+        for rel in relationships:
+            subj = rel['subject']
+            obj = rel['object']
+            pred = rel['predicate']
+            
+            if subj in G.nodes and obj in G.nodes:
+                G.add_edge(subj, obj)
+                edge_labels[(subj, obj)] = pred
+        
+        # Create visualization
+        fig, ax = plt.subplots(figsize=(width/100, height/100), dpi=100)
+        
+        # Use spring layout for positioning
+        pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+        
+        # Draw nodes
+        node_colors = []
+        for node in G.nodes():
+            # Color code by object class
+            obj_class = G.nodes[node].get('obj_class', '')
+            if 'person' in obj_class.lower():
+                node_colors.append('#FF6B6B')  # Red for people
+            elif any(x in obj_class.lower() for x in ['computer', 'monitor', 'screen']):
+                node_colors.append('#4ECDC4')  # Cyan for tech
+            elif any(x in obj_class.lower() for x in ['chair', 'desk', 'table']):
+                node_colors.append('#95E1D3')  # Light green for furniture
+            else:
+                node_colors.append('#FFE66D')  # Yellow for other
+        
+        nx.draw_networkx_nodes(G, pos, node_color=node_colors, 
+                               node_size=3000, alpha=0.9, ax=ax)
+        
+        # Draw edges
+        nx.draw_networkx_edges(G, pos, edge_color='gray', 
+                               arrows=True, arrowsize=20, 
+                               width=2, alpha=0.6, ax=ax)
+        
+        # Draw labels
+        labels = nx.get_node_attributes(G, 'label')
+        nx.draw_networkx_labels(G, pos, labels, font_size=9, 
+                                font_weight='bold', ax=ax)
+        
+        # Draw edge labels
+        nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=8, ax=ax)
+        
+        ax.axis('off')
+        ax.set_title(f"Scene Graph ({len(objects)} objects, {len(relationships)} relationships)", 
+                     fontsize=12, pad=20)
+        
+        plt.tight_layout()
+        
+        # Convert to opencv image
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', facecolor='white')
+        buf.seek(0)
+        img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+        buf.close()
+        plt.close(fig)
+        
+        img = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+        return cv2.resize(img, (width, height))
+    
     def draw_scene_graph(
         self,
         frame: np.ndarray,
@@ -368,60 +480,20 @@ If the scene is empty, return: {"objects": [], "relationships": []}
         show_spatial: bool = False,  # Unused, kept for API compatibility
     ) -> np.ndarray:
         """
-        Draw scene graph visualization on frame.
+        Draw scene graph visualization alongside the frame.
         
-        Since VLM objects don't have spatial coordinates, we display
-        the scene description as a text overlay.
+        Creates a side-by-side view with the camera frame and graph visualization.
         """
         if not scene_graph:
             return frame
-            
-        annotated = frame.copy()
         
-        # Get natural language description
-        description = self.format_graph_natural_language(scene_graph)
+        h, w = frame.shape[:2]
         
-        # Create semi-transparent overlay for text
-        overlay = annotated.copy()
-        h, w = annotated.shape[:2]
+        # Create graph visualization
+        graph_img = self._create_graph_visualization(scene_graph, width=w, height=h)
         
-        # Draw background rectangle for better text visibility
-        cv2.rectangle(overlay, (10, 10), (w - 10, 120), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.6, annotated, 0.4, 0, annotated)
+        # Combine frame and graph side by side
+        combined = np.hstack([frame, graph_img])
         
-        # Split description into lines that fit the frame
-        lines = []
-        max_width = w - 40
-        
-        # Simple word wrapping
-        words = description.split()
-        current_line = ""
-        for word in words:
-            test_line = current_line + " " + word if current_line else word
-            # Rough estimate: each char is ~10 pixels wide
-            if len(test_line) * 10 < max_width:
-                current_line = test_line
-            else:
-                if current_line:
-                    lines.append(current_line)
-                current_line = word
-        if current_line:
-            lines.append(current_line)
-        
-        # Draw text lines
-        y_offset = 35
-        for line in lines[:3]:  # Show max 3 lines
-            cv2.putText(
-                annotated,
-                line,
-                (20, y_offset),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (255, 255, 255),
-                1,
-                cv2.LINE_AA
-            )
-            y_offset += 25
-        
-        return annotated
+        return combined
 

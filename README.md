@@ -44,7 +44,11 @@ Run with **Sony A5000**:
 python3 -m bird.core.camera sony
 ```
 
-### With Scene Graph (VLM Analysis)
+### With Scene Graph (VLM Analysis + Graph Visualization)
+
+The scene graph feature analyzes frames with a VLM and displays:
+- **Left panel:** Live camera feed
+- **Right panel:** Interactive graph visualization showing objects (nodes) and relationships (edges)
 
 Use **Ollama** (local, free):
 ```bash
@@ -58,6 +62,13 @@ export OPENAI_API_KEY="sk-..."
 python3 -m bird.core.camera --enable-scene-graph --model gpt-4o       # Auto-detects openai provider
 python3 -m bird.core.camera --enable-scene-graph --model gpt-4o-mini  # Cheaper option
 ```
+
+**Graph Visualization Features:**
+- 🔴 Red nodes = People
+- 🔵 Cyan nodes = Technology (computers, monitors, screens)
+- 🟢 Green nodes = Furniture (chairs, desks, tables)
+- 🟡 Yellow nodes = Other objects
+- Arrows show relationships with labeled edges
 
 The system automatically detects the VLM provider based on the model name:
 - Models starting with `gpt-` → OpenAI

@@ -17,6 +17,8 @@ setup(
         "torchvision>=0.10.0",
         "python-dotenv",
         "ollama",  # For local LLaVA scene graph generation
-        "openai"
+        "openai",
+        "networkx>=2.5",  # For scene graph visualization
+        "matplotlib>=3.3.0"  # For scene graph plotting
     ] 
 )

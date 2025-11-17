@@ -125,6 +125,7 @@ def start_vision_pipeline(camera, vision_config: VisionConfig):
 
     for frame in camera.stream_frames():
         # 1. Object Detection - detect objects
+        breakpoint()
         detections = []
         tracked_objects = []
         if detector:
