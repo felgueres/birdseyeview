@@ -20,15 +20,15 @@
 
 ```
 birdview/
-├── bird/                       # Main package
+├── bird/   
 │   ├── __init__.py
-│   ├── cli.py                  # Command-line interface entry point
-│   ├── config.py               # Configuration management
-│   ├── core/                   # Core components
+│   ├── cli.py                  # entry point 
+│   ├── config.py               
+│   ├── core/                   
 │   │   ├── __init__.py
 │   │   ├── camera.py           # Camera interfaces (webcam, Sony A5000)
-│   │   └── pipeline.py         # Vision processing pipeline
-│   └── vision/                 # Computer vision modules
+│   │   └── pipeline.py         # Vision processing
+│   └── vision/                 
 │       ├── __init__.py
 │       ├── detector.py         # Object detection (YOLO)
 │       ├── optical_flow.py     # Optical flow estimation
@@ -37,7 +37,7 @@ birdview/
 ├── yolov8n.pt                  # YOLOv8 detection model
 ├── yolov8n-seg.pt              # YOLOv8 segmentation model
 ├── yolov8n-pose.pt             # YOLOv8 pose estimation model
-├── setup.py                    # Package installation
+├── setup.py                    
 ├── connect_alpha5000.sh        # Sony A5000 connection script
 └── README.md
 ```
