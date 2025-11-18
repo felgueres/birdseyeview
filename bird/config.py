@@ -6,6 +6,7 @@ class VisionConfig:
                 enable_optical_flow=False, 
                 enable_classifier=False, 
                 enable_tracking=False, 
+                enable_segmentation=False,
                 enable_scene_graph=False):
 
         self.enable_box = enable_box
@@ -15,7 +16,19 @@ class VisionConfig:
         self.enable_classifier = enable_classifier 
         self.enable_tracking = enable_tracking
         self.enable_scene_graph = enable_scene_graph
-        self.model_name = 'yolov8n-pose.pt'  # Options: 'yolov8n.pt', 'yolov8n-seg.pt', 'yolov8n-pose.pt'
+        self.enable_segmentation = enable_segmentation
+        
+        # If segmentation is enabled, automatically enable mask drawing
+        if enable_segmentation:
+            self.enable_mask = True
+        self.model_name = 'yolov8n-pose.pt'  # Default model
+        # Options: 'yolov8n.pt', 'yolov8n-seg.pt', 'yolov8n-pose.pt'
+        # Instead of single model, we could run in parallel to get more info
+        if enable_segmentation:
+            self.model_name = 'yolov8n-seg.pt'
+        if enable_pose:
+            self.model_name = 'yolov8n-pose.pt'
+
         self.confidence_threshold = 0.5
         self.keypoint_threshold = 0.5  # Confidence threshold for pose keypoints
         self.optical_flow_method = 'lucas_kanade'  # Options: 'lucas_kanade', 'farneback'

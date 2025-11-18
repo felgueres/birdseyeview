@@ -136,19 +136,57 @@ class ObjectDetector:
             # Color based on track ID (consistent color per track)
             color = self.colors[track_id % len(self.colors)]
             
+            # Draw segmentation mask if available
+            if 'mask' in obj and self.config.enable_mask:
+                mask = obj['mask']
+                if mask.shape != frame.shape[:2]:
+                    mask = cv2.resize(mask, (frame.shape[1], frame.shape[0]))
+                mask_binary = (mask > 0.5).astype(np.uint8)
+                colored_mask = np.zeros_like(annotated_frame)
+                colored_mask[:] = color
+                mask_indices = mask_binary == 1
+                annotated_frame[mask_indices] = cv2.addWeighted(
+                    annotated_frame[mask_indices], 0.6,
+                    colored_mask[mask_indices], 0.4, 0
+                )
+            
+            # Draw pose keypoints if available
+            if 'keypoints' in obj and self.config.enable_pose:
+                keypoints = obj['keypoints']
+                
+                # Draw skeleton connections first (so they appear under the keypoints)
+                for connection in self.skeleton:
+                    start_idx, end_idx = connection[0], connection[1]
+                    if start_idx < len(keypoints) and end_idx < len(keypoints):
+                        start_point = keypoints[start_idx]
+                        end_point = keypoints[end_idx]
+                        
+                        # Only draw if both keypoints have sufficient confidence
+                        if start_point[2] > self.config.keypoint_threshold and end_point[2] > self.config.keypoint_threshold:
+                            start_pos = (int(start_point[0]), int(start_point[1]))
+                            end_pos = (int(end_point[0]), int(end_point[1]))
+                            cv2.line(annotated_frame, start_pos, end_pos, color, 2)
+                
+                # Draw keypoints on top
+                for kpt in keypoints:
+                    if kpt[2] > self.config.keypoint_threshold:  # confidence threshold
+                        cv2.circle(annotated_frame, (int(kpt[0]), int(kpt[1])), 4, (0, 0, 255), -1)
+            
             # Draw bounding box
-            cv2.rectangle(annotated_frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
+            if self.config.enable_box:
+                cv2.rectangle(annotated_frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
             
             # Draw track ID and class
-            label = f"ID:{track_id} {class_name}: {confidence:.2f}"
-            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-            cv2.rectangle(annotated_frame, 
-                         (bbox[0], bbox[1] - label_size[1] - 10),
-                         (bbox[0] + label_size[0], bbox[1]),
-                         color, -1)
-            cv2.putText(annotated_frame, label, 
-                       (bbox[0], bbox[1] - 5),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            if self.config.enable_classifier:
+                label = f"ID:{track_id} {class_name}: {confidence:.2f}"
+                label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+                cv2.rectangle(annotated_frame, 
+                             (bbox[0], bbox[1] - label_size[1] - 10),
+                             (bbox[0] + label_size[0], bbox[1]),
+                             color, -1)
+                cv2.putText(annotated_frame, label, 
+                           (bbox[0], bbox[1] - 5),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
             
             # Draw trajectory
             if self.config.draw_trajectories and len(trajectory) > 1:
@@ -160,6 +198,7 @@ class ObjectDetector:
                     cv2.circle(annotated_frame, (int(x), int(y)), 2, color, -1)
             
             # Draw center point
-            cv2.circle(annotated_frame, center, 5, color, -1)
+            if self.config.enable_box:
+                cv2.circle(annotated_frame, center, 5, color, -1)
         
         return annotated_frame

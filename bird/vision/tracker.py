@@ -55,6 +55,12 @@ class SimpleTracker:
             self.tracks[trk_idx]['class'] = detections[det_idx]['class']
             self.tracks[trk_idx]['confidence'] = detections[det_idx]['confidence']
             
+            # Preserve mask and keypoints if present
+            if 'mask' in detections[det_idx]:
+                self.tracks[trk_idx]['mask'] = detections[det_idx]['mask']
+            if 'keypoints' in detections[det_idx]:
+                self.tracks[trk_idx]['keypoints'] = detections[det_idx]['keypoints']
+            
             # Update trajectory
             center = detections[det_idx]['center']
             self.trajectories[self.tracks[trk_idx]['id']].append(
@@ -71,6 +77,12 @@ class SimpleTracker:
                 'hits': 1,
                 'age': 0
             }
+            # Preserve mask and keypoints if present
+            if 'mask' in detections[det_idx]:
+                new_track['mask'] = detections[det_idx]['mask']
+            if 'keypoints' in detections[det_idx]:
+                new_track['keypoints'] = detections[det_idx]['keypoints']
+            
             self.tracks.append(new_track)
             
             # Initialize trajectory
@@ -103,6 +115,12 @@ class SimpleTracker:
                     'confidence': track['confidence'],
                     'trajectory': list(self.trajectories[track['id']])
                 }
+                # Preserve mask and keypoints if present
+                if 'mask' in track:
+                    tracked_obj['mask'] = track['mask']
+                if 'keypoints' in track:
+                    tracked_obj['keypoints'] = track['keypoints']
+                    
                 tracked_objects.append(tracked_obj)
         
         return tracked_objects

@@ -127,5 +127,8 @@ brew services start ollama
 ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
 ```
 
-## Notes
-- Vision tasks have a) calculate, b) draw methods, maybe there's a nice abstraction to make here
+## Evals 
+
+A large-scale benchmark dataset for event recognition in surveillance video
+- https://viratdata.org - aerial and ground 
+- Aerials are public but labeling not available

@@ -6,10 +6,9 @@ from dotenv import load_dotenv
 
 from bird.config import VisionConfig
 from bird.core.camera import Webcam, SonyA5000
-from bird.core.pipeline import start_vision_pipeline
+from bird.core.pipeline import run
 
 load_dotenv()
-
 
 def main():
     """BirdView CLI - Computer Vision Pipeline Runner"""
@@ -28,6 +27,10 @@ def main():
                         help='Enable object tracking (default: enabled)')
     parser.add_argument('--enable-box', action='store_true', default=False,
                         help='Enable bounding box detection (default: enabled)')
+    parser.add_argument('--enable_segmentation', action='store_true', default=False,
+                        help='Enable segmentation (default: disabled)')
+    parser.add_argument('--enable_tracking', action='store_true', default=False,
+                        help='Enable object tracking (default: enabled)')
     
     args = parser.parse_args()
     
@@ -67,23 +70,24 @@ def main():
         print("Using webcam...")
         camera = Webcam(camera_index=args.camera_index)
     
-    # Configure vision pipeline
     vision_config = VisionConfig(
         enable_scene_graph=args.enable_scene_graph, 
         enable_tracking=args.enable_tracking,
-        enable_box=args.enable_box
+        enable_segmentation=args.enable_segmentation,
+        enable_box=args.enable_box or args.enable_segmentation,
     )
     vision_config.scene_graph_vlm_provider = args.vlm
     vision_config.scene_graph_vlm_model = args.model
     
     print(f"\n{'='*60}")
     print(f"Camera: {args.camera}")
+    print(f"Model: {vision_config.model_name}")
     if args.enable_scene_graph:
         print(f"VLM: {args.vlm} ({args.model})")
     print(f"Tracking: {args.enable_tracking}")
     print(f"{'='*60}\n")
     
-    start_vision_pipeline(camera, vision_config=vision_config)
+    run(camera, vision_config=vision_config)
 
 
 if __name__ == "__main__":

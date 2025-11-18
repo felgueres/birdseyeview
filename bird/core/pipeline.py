@@ -6,7 +6,7 @@ from bird.vision.scene_graph import SceneGraphBuilder
 import cv2
 
 
-def start_vision_pipeline(camera, vision_config: VisionConfig):
+def run(camera, vision_config: VisionConfig):
     """
     Vision pipeline that processes camera frames.
     
@@ -17,7 +17,7 @@ def start_vision_pipeline(camera, vision_config: VisionConfig):
         camera: Camera instance (Webcam or SonyA5000) that provides stream_frames()
         vision_config: VisionConfig instance with pipeline settings
     """
-    detector = ObjectDetector(vision_config=vision_config) if vision_config.enable_box else None
+    detector = ObjectDetector(vision_config=vision_config) if vision_config.enable_box or vision_config.enable_segmentation else None
     flow_tracker = OpticalFlowTracker(method=vision_config.optical_flow_method) if vision_config.enable_optical_flow else None
     object_tracker = SimpleTracker(
         max_age=vision_config.tracking_max_age,
@@ -39,6 +39,7 @@ def start_vision_pipeline(camera, vision_config: VisionConfig):
         tracked_objects = []
         if detector:
             detections = detector.detect_objects(frame)
+            
             # Tracks object movement
             if object_tracker:
                 tracked_objects = object_tracker.update(detections)
