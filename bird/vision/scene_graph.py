@@ -484,12 +484,5 @@ If the scene is empty, return: {"objects": [], "relationships": []}
             return frame
         
         h, w = frame.shape[:2]
-        
-        # Create graph visualization
         graph_img = self._create_graph_visualization(scene_graph, width=w, height=h)
-        
-        # Combine frame and graph side by side
-        combined = np.hstack([frame, graph_img])
-        
-        return combined
-
+        return np.hstack([frame, graph_img])

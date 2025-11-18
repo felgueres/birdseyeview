@@ -4,13 +4,3 @@ from .tracker import SimpleTracker
 from .scene_graph import SceneGraphBuilder, SceneGraphOntology
 
 __all__ = ['ObjectDetector', 'OpticalFlowTracker', 'SimpleTracker', 'SceneGraphBuilder', 'SceneGraphOntology']
-
-# Common object classes that might be useful for birdview/surveillance
-COMMON_CLASSES = [
-    'person', 'car', 'bicycle', 'motorcycle', 'bus', 'truck', 
-    'dog', 'cat', 'bird', 'bottle', 'chair', 'laptop'
-]
-
-VEHICLE_CLASSES = ['car', 'bicycle', 'motorcycle', 'bus', 'truck']
-PERSON_CLASSES = ['person']
-ANIMAL_CLASSES = ['dog', 'cat', 'bird', 'horse', 'sheep', 'cow']

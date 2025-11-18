@@ -7,7 +7,8 @@ class VisionConfig:
                 enable_classifier=False, 
                 enable_tracking=False, 
                 enable_segmentation=False,
-                enable_scene_graph=False):
+                enable_scene_graph=False,
+                enable_overlay=True):
 
         self.enable_box = enable_box
         self.enable_mask = enable_mask
@@ -17,6 +18,7 @@ class VisionConfig:
         self.enable_tracking = enable_tracking
         self.enable_scene_graph = enable_scene_graph
         self.enable_segmentation = enable_segmentation
+        self.enable_overlay = enable_overlay
         
         # If segmentation is enabled, automatically enable mask drawing
         if enable_segmentation:
