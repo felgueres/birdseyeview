@@ -145,7 +145,6 @@ class SceneGraphBuilder:
     def build_graph(
         self,
         frame: np.ndarray,
-        tracked_objects: List[Dict] = None,  # Unused, kept for API compatibility
     ) -> Optional[Dict]:
         """
         Build scene graph exclusively from VLM analysis.
@@ -247,12 +246,12 @@ class SceneGraphBuilder:
             return {'objects': objects, 'relationships': relationships}
             
         except json.JSONDecodeError as e:
-            print(f"  ⚠️  Failed to parse Ollama response: {e}")
+            print(f"Failed to parse Ollama response: {e}")
             if 'content' in locals():
                 print(f"  Raw response: {content[:200]}")
             return {'objects': [], 'relationships': []}
         except Exception as e:
-            print(f"  ⚠️  Ollama error: {e}")
+            print(f"Ollama error: {e}")
             return {'objects': [], 'relationships': []}
     
     def _analyze_with_openai(self, frame: np.ndarray) -> Dict:
@@ -318,12 +317,12 @@ If the scene is empty, return: {"objects": [], "relationships": []}
             return {'objects': objects, 'relationships': relationships}
             
         except json.JSONDecodeError as e:
-            print(f"  ⚠️  Failed to parse GPT-4o response: {e}")
+            print(f"Failed to parse GPT-4o response: {e}")
             if 'content' in locals():
                 print(f"  Raw response: {content[:200]}")
             return {'objects': [], 'relationships': []}
         except Exception as e:
-            print(f"  ⚠️  GPT-4o error: {e}")
+            print(f"GPT-4o error: {e}")
             return {'objects': [], 'relationships': []}
     
     def format_graph_natural_language(self, scene_graph: Dict) -> str:

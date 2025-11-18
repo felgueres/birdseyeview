@@ -27,10 +27,8 @@ def main():
                         help='Enable object tracking (default: enabled)')
     parser.add_argument('--enable-box', action='store_true', default=False,
                         help='Enable bounding box detection (default: enabled)')
-    parser.add_argument('--enable_segmentation', action='store_true', default=False,
+    parser.add_argument('--enable-segmentation', action='store_true', default=False,
                         help='Enable segmentation (default: disabled)')
-    parser.add_argument('--enable_tracking', action='store_true', default=False,
-                        help='Enable object tracking (default: enabled)')
     
     args = parser.parse_args()
     

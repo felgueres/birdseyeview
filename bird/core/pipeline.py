@@ -3,6 +3,7 @@ from bird.vision.detector import ObjectDetector
 from bird.vision.optical_flow import OpticalFlowTracker
 from bird.vision.tracker import SimpleTracker
 from bird.vision.scene_graph import SceneGraphBuilder
+import json
 import cv2
 
 
@@ -61,9 +62,9 @@ def run(camera, vision_config: VisionConfig):
             scene_graph = scene_graph_builder.build_graph(frame)
             if scene_graph:  # Only on VLM frames
                 frame = scene_graph_builder.draw_scene_graph(frame, scene_graph)
-                description = scene_graph_builder.format_graph_natural_language(scene_graph)
                 print(f"\n=== Scene Graph ===")
-                print(description)
+                print(json.dumps(scene_graph, indent=4))
+                # description = scene_graph_builder.format_graph_natural_language(scene_graph)
                 print(f"==================\n")
         
         # 3. Optical Flow - compute and draw
