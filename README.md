@@ -18,8 +18,6 @@
 | 3D Object detection | Detect objects in 3D space (position, orientation, size). 3D boxes in world coordinates. | |
 | Re-identificatino (ReID) | Recognize a previously seen object or in another camera. Produces embedding vector + id match. | |
 
-## Project Structure
-
 ```
 birdview/
 ├── bird/                       # Main package
@@ -46,8 +44,6 @@ birdview/
 
 ## Hardware
 
-This is the hardware I'm using:
-
 **Sony A5000**
 TODO: add specs
 
@@ -59,13 +55,13 @@ python3 -m bird.cli
 python3 -m bird.cli --camera-index 1 
 ```
 
-Use **Ollama** (local, free):
+With **Ollama**
 ```bash
 python3 -m bird.cli --enable-scene-graph                     # Uses llava:7b
 python3 -m bird.cli --enable-scene-graph --model llava:13b
 ```
 
-Use **OpenAI GPT-4o** (API, requires OPENAI_API_KEY):
+With **OpenAI GPT-4o**
 ```bash
 python3 -m bird.cli --enable-scene-graph --model gpt-4o       # Auto-detects openai provider
 python3 -m bird.cli --enable-scene-graph --model gpt-4o-mini  # Cheaper option
