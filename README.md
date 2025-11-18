@@ -8,8 +8,8 @@
 | Pose segmentation | Detect body joints like elbows, knees and provide coordinates. | X |
 | Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. | X |
 | Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X |
-| Temporal segmentation | Split by activity phases. Timeline segments. | |
 | Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. | X |
+| Temporal segmentation | Split by activity phases. Timeline segments. | |
 | Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. | |
 | Action recognition | What's happening in video. Action labels + time segments. | |
 | Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. | |
