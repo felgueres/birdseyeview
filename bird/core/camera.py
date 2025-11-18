@@ -38,6 +38,41 @@ class Webcam:
                 self.cap.release()
 
 class SonyA5000:
+    """
+    To inspect camera:
+    <!-- Starts the camera -->
+    curl -H "Content-Type: application/json" -d '{"method":"startRecMode","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
+    <!-- Get available api -->
+    curl -H "Content-Type: application/json" -d '{"method":"getAvailableApiList","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
+    <!-- Starts live view -->
+    curl -H "Content-Type: application/json" -d '{"method":"startLiveview","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
+    <!-- Stops live view -->
+    curl -H "Content-Type: application/json" -d '{"method":"stopLiveview","params":[],"id":1,"version":"1.0"}' http://192.168.122.1:8080/sony/camera
+
+    **API Methods on startRecMode**
+    - `getVersions`
+    - `getMethodTypes`
+    - `getApplicationInfo`
+    - `getAvailableApiList`
+    - `getEvent`
+    - `actTakePicture`
+    - `stopRecMode`
+    - `startLiveview`
+    - `stopLiveview`
+    - `actZoom`
+    - `setSelfTimer`
+    - `getSelfTimer`
+    - `getAvailableSelfTimer`
+    - `getSupportedSelfTimer`
+    - `getExposureCompensation`
+    - `getAvailableExposureCompensation`
+    - `getSupportedExposureCompensation`
+    - `setShootMode`
+    - `getShootMode`
+    - `getAvailableShootMode`
+    - `getSupportedShootMode`
+    - `getSupportedFlashMode`
+    """
     def __init__(self, camera_ip: str = "192.168.122.1", port: int = 8080):
         self.camera_ip = camera_ip
         self.port = port
