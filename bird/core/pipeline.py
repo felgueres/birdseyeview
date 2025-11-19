@@ -34,9 +34,7 @@ def run(camera, vision_config: VisionConfig):
         vlm_interval=vision_config.scene_graph_vlm_interval
     ) if vision_config.enable_scene_graph else None
     
-    # Initialize info overlay
-    overlay = InfoOverlay(position='right', width=250, alpha=0.7)
-
+    overlay = InfoOverlay(position='right', width=500, alpha=1)
     frame_count = 0
     fps = 0
     fps_start_time = time.time()
@@ -68,8 +66,7 @@ def run(camera, vision_config: VisionConfig):
         # 2. Scene Graph - VLM analysis and draw (overrides visualizations on VLM frames)
         if scene_graph_builder:
             scene_graph = scene_graph_builder.build_graph(frame)
-            if scene_graph:  # Only on VLM frames
-                frame = scene_graph_builder.draw_scene_graph(frame, scene_graph)
+            if scene_graph:
                 events.append("VLM update")
         
         # 3. Optical Flow - compute and draw
