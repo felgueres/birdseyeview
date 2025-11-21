@@ -6,6 +6,9 @@
 Found a list of pedestrian datasets here: https://gitlab.tu-clausthal.de/pka20/Trajectory-Prediction-Pedestrian/-/tree/master
 WOMD-Reasoning [ICML 2025](https://github.com/yhli123/WOMD-Reasoning). Language dataset of interaction and driving intention reasoning, builds off of Waymo's datasets (WOMD)
 - It's interesting that instead of using as VLM, they translated motion data into plain language to feed the model. Prompts included
+- A large-scale benchmark dataset for event recognition in surveillance video
+- https://viratdata.org - aerial and ground 
+- Aerials are public but labeling not available
 
 11/18/2025
 next: 

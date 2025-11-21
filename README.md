@@ -1,9 +1,15 @@
 # Vision 
 
-I'm learning what's possible with in the world of computer vision today.  
-I'm using a Logicam c920s Pro 1080 and a Sony A5000 as devices for testing.
+This project is a backend repo where I'm learning what's possible in the world of computer vision today.  
+The idea is to have primitives to experiment with evals and product ideas.  
 
-These are the different tasks and their status so far.
+I'm currently using a Logicam c920s Pro 1080 and a Sony A5000 and M3 16GB for local inference. 
+
+Some cool end golas could be to build:
+- Eagle view with multi cameras
+- 3d objection projections
+- A video editor that lets you mask objects with temporal consistency
+- Video search on events
 
 | Tasks | Description | Implemented |
 |------|-------------|-------------|
@@ -72,9 +78,3 @@ brew install ollama
 brew services start ollama
 ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
 ```
-
-## Evals 
-
-A large-scale benchmark dataset for event recognition in surveillance video
-- https://viratdata.org - aerial and ground 
-- Aerials are public but labeling not available
