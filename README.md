@@ -9,10 +9,10 @@
 | Optical flow | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field. | X |
 | Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X |
 | Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. | X |
+| Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. | X |
 | Temporal segmentation | Split by activity phases. Timeline segments. | |
 | Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. | |
 | Action recognition | What's happening in video. Action labels + time segments. | |
-| Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. | |
 | Anomaly detection | Detect unusual behavior, appearance or events. Anomaly score. | |
 | Object tracking + prediction | Track + forecast future positions. Trajectory with predicted path. | |
 | 3D Object detection | Detect objects in 3D space (position, orientation, size). 3D boxes in world coordinates. | |
