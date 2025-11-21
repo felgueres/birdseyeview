@@ -19,6 +19,9 @@ setup(
         "ollama",  # For local LLaVA scene graph generation
         "openai",
         "networkx>=2.5",  # For scene graph visualization
-        "matplotlib>=3.3.0"  # For scene graph plotting
+        "matplotlib>=3.3.0",  # For scene graph plotting
+        "transformers",
+        "torch",
+        "torchvision"
     ] 
 )

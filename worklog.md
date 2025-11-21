@@ -1,3 +1,7 @@
+11/21/2025
+- Requested access for SAM3
+- Add depth estimator model: [Depth Anything](https://github.com/DepthAnything/Depth-Anything-V2)
+
 11/19/2025
 Found a list of pedestrian datasets here: https://gitlab.tu-clausthal.de/pka20/Trajectory-Prediction-Pedestrian/-/tree/master
 WOMD-Reasoning [ICML 2025](https://github.com/yhli123/WOMD-Reasoning). Language dataset of interaction and driving intention reasoning, builds off of Waymo's datasets (WOMD)

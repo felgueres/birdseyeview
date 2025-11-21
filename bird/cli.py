@@ -29,6 +29,10 @@ def main():
                         help='Enable bounding box detection (default: enabled)')
     parser.add_argument('--enable-segmentation', action='store_true', default=False,
                         help='Enable segmentation (default: disabled)')
+    parser.add_argument('--enable-depth', action='store_true', default=False,
+                        help='Enable depth estimation (default: disabled)')
+    parser.add_argument('--depth-model', choices=['small', 'base', 'large'], default='small',
+                        help='Depth model size (default: small)')
     parser.add_argument('--no-overlay', action='store_true', default=False,
                         help='Disable metrics overlay (default: overlay enabled)')
     
@@ -76,6 +80,8 @@ def main():
         enable_segmentation=args.enable_segmentation,
         enable_box=args.enable_box or args.enable_segmentation,
         enable_overlay=not args.no_overlay,
+        enable_depth=args.enable_depth,
+        depth_model_size=args.depth_model,
     )
     vision_config.scene_graph_vlm_provider = args.vlm
     vision_config.scene_graph_vlm_model = args.model

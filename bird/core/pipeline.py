@@ -4,6 +4,7 @@ from bird.vision.optical_flow import OpticalFlowTracker
 from bird.vision.tracker import SimpleTracker
 from bird.vision.scene_graph import SceneGraphBuilder
 from bird.vision.overlay import InfoOverlay
+from bird.vision.depth_estimator import DepthEstimator
 import json
 import cv2
 import time
@@ -33,8 +34,12 @@ def run(camera, vision_config: VisionConfig):
         vlm_model=vision_config.scene_graph_vlm_model,
         vlm_interval=vision_config.scene_graph_vlm_interval
     ) if vision_config.enable_scene_graph else None
+    depth_estimator = DepthEstimator(
+        model_size=vision_config.depth_model_size
+    ) if vision_config.enable_depth else None
     
-    overlay = InfoOverlay(position='right', width=500, alpha=1)
+    # Initialize info overlay
+    overlay = InfoOverlay(position='right', width=250, alpha=0.7)
     frame_count = 0
     fps = 0
     fps_start_time = time.time()
@@ -44,11 +49,23 @@ def run(camera, vision_config: VisionConfig):
         frame_start_time = time.time()
         events = []
         
-        # 1. Object Detection - detect objects
+        # 1. Depth Estimation (if enabled, run early for object depth info)
+        depth_map = None
+        if depth_estimator:
+            depth_map = depth_estimator.estimate_depth(frame)
+        
+        # 2. Object Detection - detect objects
         detections = []
         tracked_objects = []
         if detector:
             detections = detector.detect_objects(frame)
+            
+            # Add depth info to detections
+            if depth_map is not None:
+                for det in detections:
+                    depth_info = depth_estimator.get_depth_for_bbox(depth_map, det['bbox'])
+                    det['depth'] = depth_info['mean']
+                    det['depth_stats'] = depth_info
             
             # Tracks object movement
             if object_tracker:
@@ -63,13 +80,17 @@ def run(camera, vision_config: VisionConfig):
             else:
                 frame = detector.draw_detections(frame, detections)
         
-        # 2. Scene Graph - VLM analysis and draw (overrides visualizations on VLM frames)
+        # 3. Depth Visualization (blend with frame if enabled)
+        if depth_map is not None:
+            frame = depth_estimator.create_depth_overlay(frame, depth_map, alpha=vision_config.depth_alpha)
+        
+        # 4. Scene Graph - VLM analysis and draw (overrides visualizations on VLM frames)
         if scene_graph_builder:
             scene_graph = scene_graph_builder.build_graph(frame)
             if scene_graph:
                 events.append("VLM update")
         
-        # 3. Optical Flow - compute and draw
+        # 5. Optical Flow - compute and draw
         motion_energy = 0
         tracked_points = 0
         if flow_tracker:
@@ -103,6 +124,10 @@ def run(camera, vision_config: VisionConfig):
         
         if flow_tracker and tracked_points > 0:
             metrics['Motion'] = motion_energy
+        
+        if depth_map is not None:
+            depth_stats = depth_estimator.get_depth_statistics(depth_map)
+            metrics['Avg Depth'] = depth_stats['mean_depth']
         
         # Pipeline timing
         frame_time = (time.time() - frame_start_time) * 1000

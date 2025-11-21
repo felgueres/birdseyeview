@@ -8,7 +8,9 @@ class VisionConfig:
                 enable_tracking=False, 
                 enable_segmentation=False,
                 enable_scene_graph=False,
-                enable_overlay=True):
+                enable_overlay=True,
+                enable_depth=False,
+                depth_model_size='small'):
 
         self.enable_box = enable_box
         self.enable_mask = enable_mask
@@ -19,6 +21,9 @@ class VisionConfig:
         self.enable_scene_graph = enable_scene_graph
         self.enable_segmentation = enable_segmentation
         self.enable_overlay = enable_overlay
+        self.enable_depth = enable_depth
+        self.depth_model_size = depth_model_size  # 'small', 'base', or 'large'
+        self.depth_alpha = 0.4  # Blending factor for depth overlay
         
         # If segmentation is enabled, automatically enable mask drawing
         if enable_segmentation:

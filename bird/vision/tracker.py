@@ -55,11 +55,15 @@ class SimpleTracker:
             self.tracks[trk_idx]['class'] = detections[det_idx]['class']
             self.tracks[trk_idx]['confidence'] = detections[det_idx]['confidence']
             
-            # Preserve mask and keypoints if present
+            # Preserve mask, keypoints, and depth if present
             if 'mask' in detections[det_idx]:
                 self.tracks[trk_idx]['mask'] = detections[det_idx]['mask']
             if 'keypoints' in detections[det_idx]:
                 self.tracks[trk_idx]['keypoints'] = detections[det_idx]['keypoints']
+            if 'depth' in detections[det_idx]:
+                self.tracks[trk_idx]['depth'] = detections[det_idx]['depth']
+            if 'depth_stats' in detections[det_idx]:
+                self.tracks[trk_idx]['depth_stats'] = detections[det_idx]['depth_stats']
             
             # Update trajectory
             center = detections[det_idx]['center']
@@ -77,11 +81,15 @@ class SimpleTracker:
                 'hits': 1,
                 'age': 0
             }
-            # Preserve mask and keypoints if present
+            # Preserve mask, keypoints, and depth if present
             if 'mask' in detections[det_idx]:
                 new_track['mask'] = detections[det_idx]['mask']
             if 'keypoints' in detections[det_idx]:
                 new_track['keypoints'] = detections[det_idx]['keypoints']
+            if 'depth' in detections[det_idx]:
+                new_track['depth'] = detections[det_idx]['depth']
+            if 'depth_stats' in detections[det_idx]:
+                new_track['depth_stats'] = detections[det_idx]['depth_stats']
             
             self.tracks.append(new_track)
             
@@ -115,11 +123,15 @@ class SimpleTracker:
                     'confidence': track['confidence'],
                     'trajectory': list(self.trajectories[track['id']])
                 }
-                # Preserve mask and keypoints if present
+                # Preserve mask, keypoints, and depth if present
                 if 'mask' in track:
                     tracked_obj['mask'] = track['mask']
                 if 'keypoints' in track:
                     tracked_obj['keypoints'] = track['keypoints']
+                if 'depth' in track:
+                    tracked_obj['depth'] = track['depth']
+                if 'depth_stats' in track:
+                    tracked_obj['depth_stats'] = track['depth_stats']
                     
                 tracked_objects.append(tracked_obj)
         
