@@ -1,5 +1,10 @@
 # Vision 
 
+I'm learning what's possible with in the world of computer vision today.
+I'm using a Logicam c920s Pro 1080 and a Sony A5000 as devices for testing.
+
+These are the different tasks and their status so far.
+
 | Tasks | Description | Implemented |
 |------|-------------|-------------|
 | Detection | What's in an image. Bounding box by frame. | X |
@@ -47,32 +52,20 @@ Run with **webcam** (default):
 ```bash
 python3 -m bird.cli                    
 python3 -m bird.cli --camera-index 1 
-```
-
-With **Ollama**
-```bash
-python3 -m bird.cli --enable-scene-graph                     # Uses llava:7b
 python3 -m bird.cli --enable-scene-graph --model llava:13b
-```
-
-With **OpenAI GPT-4o**
-```bash
-python3 -m bird.cli --enable-scene-graph --model gpt-4o       # Auto-detects openai provider
-python3 -m bird.cli --enable-scene-graph --model gpt-4o-mini  # Cheaper option
+python3 -m bird.cli --enable-scene-graph --model gpt-4o
 ```
 
 ```bash
 --camera-index N          # Webcam index (default: 0)
 --vlm [ollama|openai]     # VLM provider (default: ollama)
 --model MODEL_NAME        # Model name (default: llava:7b for ollama, gpt-4o for openai)
---enable-scene-graph      # Enable VLM scene graph analysis
---enable-tracking         # Enable object tracking (enabled by default)
---enable-box              # Enable bounding boxes (enabled by default)
+--enable-scene-graph      # VLM scene graph 
+--enable-tracking         # object tracking 
+--enable-box              # bounding boxes 
+--enable-depth
+--remove-bg
 ```
-
-## VLM 
-
-Uses llava or gpt4o
 
 ```bash
 brew install ollama
