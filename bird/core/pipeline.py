@@ -5,9 +5,11 @@ from bird.vision.tracker import SimpleTracker
 from bird.vision.scene_graph import SceneGraphBuilder
 from bird.vision.overlay import InfoOverlay
 from bird.vision.depth_estimator import DepthEstimator
+from bird.vision.background_remover import BackgroundRemover
 import json
 import cv2
 import time
+import numpy as np
 
 
 def run(camera, vision_config: VisionConfig):
@@ -37,6 +39,10 @@ def run(camera, vision_config: VisionConfig):
     depth_estimator = DepthEstimator(
         model_size=vision_config.depth_model_size
     ) if vision_config.enable_depth else None
+    bg_remover = BackgroundRemover(
+        mode=vision_config.bg_removal_mode,
+        depth_threshold=vision_config.bg_depth_threshold
+    ) if vision_config.enable_bg_removal else None
     
     # Initialize info overlay
     overlay = InfoOverlay(position='right', width=250, alpha=0.7)
@@ -80,17 +86,40 @@ def run(camera, vision_config: VisionConfig):
             else:
                 frame = detector.draw_detections(frame, detections)
         
-        # 3. Depth Visualization (blend with frame if enabled)
-        if depth_map is not None:
+        # 3. Background Removal (if enabled, do before depth viz)
+        if bg_remover:
+            if bg_remover.mode == 'mask' and (detections or tracked_objects):
+                objects = tracked_objects if tracked_objects else detections
+                frame = bg_remover.remove_with_masks(frame, objects)
+            elif bg_remover.mode == 'depth' and depth_map is not None:
+                frame = bg_remover.remove_with_depth(frame, depth_map)
+            elif bg_remover.mode == 'combined' and depth_map is not None and (detections or tracked_objects):
+                objects = tracked_objects if tracked_objects else detections
+                frame = bg_remover.remove_combined(frame, objects, depth_map)
+            elif bg_remover.mode == 'blur' and (detections or tracked_objects):
+                objects = tracked_objects if tracked_objects else detections
+                # Create foreground mask
+                h, w = frame.shape[:2]
+                mask = np.zeros((h, w), dtype=np.uint8)
+                for obj in objects:
+                    if 'mask' in obj:
+                        obj_mask = obj['mask']
+                        if obj_mask.shape != (h, w):
+                            obj_mask = cv2.resize(obj_mask, (w, h))
+                        mask = np.maximum(mask, (obj_mask > 0.5).astype(np.uint8))
+                frame = bg_remover.blur_background(frame, mask, blur_amount=25)
+        
+        # 4. Depth Visualization (blend with frame if enabled)
+        if depth_map is not None and not bg_remover:  # Skip if bg removal used depth
             frame = depth_estimator.create_depth_overlay(frame, depth_map, alpha=vision_config.depth_alpha)
         
-        # 4. Scene Graph - VLM analysis and draw (overrides visualizations on VLM frames)
+        # 5. Scene Graph - VLM analysis and draw (overrides visualizations on VLM frames)
         if scene_graph_builder:
             scene_graph = scene_graph_builder.build_graph(frame)
             if scene_graph:
                 events.append("VLM update")
         
-        # 5. Optical Flow - compute and draw
+        # 6. Optical Flow - compute and draw
         motion_energy = 0
         tracked_points = 0
         if flow_tracker:

@@ -10,7 +10,10 @@ class VisionConfig:
                 enable_scene_graph=False,
                 enable_overlay=True,
                 enable_depth=False,
-                depth_model_size='small'):
+                depth_model_size='small',
+                enable_bg_removal=False,
+                bg_removal_mode='mask',
+                bg_depth_threshold=0.6):
 
         self.enable_box = enable_box
         self.enable_mask = enable_mask
@@ -24,6 +27,9 @@ class VisionConfig:
         self.enable_depth = enable_depth
         self.depth_model_size = depth_model_size  # 'small', 'base', or 'large'
         self.depth_alpha = 0.4  # Blending factor for depth overlay
+        self.enable_bg_removal = enable_bg_removal
+        self.bg_removal_mode = bg_removal_mode  # 'mask', 'depth', 'combined', or 'blur'
+        self.bg_depth_threshold = bg_depth_threshold  # For depth-based removal
         
         # If segmentation is enabled, automatically enable mask drawing
         if enable_segmentation:

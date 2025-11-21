@@ -33,6 +33,11 @@ def main():
                         help='Enable depth estimation (default: disabled)')
     parser.add_argument('--depth-model', choices=['small', 'base', 'large'], default='small',
                         help='Depth model size (default: small)')
+    parser.add_argument('--remove-bg', action='store_true', default=False,
+                        help='Enable background removal')
+    parser.add_argument('--bg-mode', choices=['mask', 'depth', 'combined', 'blur'], 
+                        default='mask',
+                        help='Background removal mode (default: mask)')
     parser.add_argument('--no-overlay', action='store_true', default=False,
                         help='Disable metrics overlay (default: overlay enabled)')
     
@@ -82,6 +87,8 @@ def main():
         enable_overlay=not args.no_overlay,
         enable_depth=args.enable_depth,
         depth_model_size=args.depth_model,
+        enable_bg_removal=args.remove_bg,
+        bg_removal_mode=args.bg_mode,
     )
     vision_config.scene_graph_vlm_provider = args.vlm
     vision_config.scene_graph_vlm_model = args.model
