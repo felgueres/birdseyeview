@@ -54,26 +54,20 @@ birdview/
 ```
 ## Usage
 
-Run with **webcam** (default):
 ```bash
 python3 -m bird.cli                    
 python3 -m bird.cli --camera-index 1 
 python3 -m bird.cli --enable-scene-graph --model llava:13b
 python3 -m bird.cli --enable-scene-graph --model gpt-4o
-```
 
-```bash
 --camera-index N          # Webcam index (default: 0)
---vlm [ollama|openai]     # VLM provider (default: ollama)
---model MODEL_NAME        # Model name (default: llava:7b for ollama, gpt-4o for openai)
+--vlm [ollama|openai]     # defaults ollama
 --enable-scene-graph      # VLM scene graph 
---enable-tracking         # object tracking 
---enable-box              # bounding boxes 
+--enable-tracking         
+--enable-box              
 --enable-depth
---remove-bg
-```
 
-```bash
+# To install ollama vlm
 brew install ollama
 brew services start ollama
 ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
