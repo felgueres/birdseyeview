@@ -1,6 +1,6 @@
 # Vision 
 
-I'm learning what's possible with in the world of computer vision today.
+I'm learning what's possible with in the world of computer vision today.  
 I'm using a Logicam c920s Pro 1080 and a Sony A5000 as devices for testing.
 
 These are the different tasks and their status so far.
