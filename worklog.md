@@ -1,6 +1,13 @@
+11/23/2025
+Read "In the blink of an eye" which is the memoirs of a film editor
+In the 90s, the industry went from mechanical to digital when computer memory got really cheap
+Over night the industry went from Linear Video Editing to Random Access Editing, fully digital. 
+The implications are major and obvious but also subtle and negative. 
+In an extreme exercise to imagine the future, he thinks of a crewless, individual creator that is able to will scenes from his mind and how would that creative process will fare about. This future has already arrived
+
 11/22/2025
-Spent the morning getting an NVIDIA Orin to load SAM3. After 2 hrs of battling with pytorch, turns out the model is actually 3GB in FP16 which everything included for inference, it maxes out the formidable yet unusable 8GB RAM in the nano  
-Best is to pay 9 bucks for google collab and run on an L4 GPU, just works  
+Spent the morning getting an NVIDIA Orin to load SAM3. After 2 hrs of battling with pytorch, turns out the model is actually 3GB in FP16 which everything included for inference, it maxes out the formidable yet unusable 8GB RAM 
+Best is to pay 9 bucks for google collab and run on an L4 GPU
 SAM is impressive. Few notes:  
 - You can "click" to indicate to model what you want to segment. Either positively to reinforce or negatively.
 - You can propagate forward in video which means that you can get a mask and track that object in the video
