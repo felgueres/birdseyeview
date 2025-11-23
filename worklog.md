@@ -1,3 +1,11 @@
+11/22/2025
+Spent the morning getting an NVIDIA Orin to load SAM3. After 2 hrs of battling with pytorch, turns out the model is actually 3GB in FP16 which everything included for inference, it maxes out the formidable yet unusable 8GB RAM in the nano  
+Best is to pay 9 bucks for google collab and run on an L4 GPU, just works  
+SAM is impressive. Few notes:  
+- You can "click" to indicate to model what you want to segment. Either positively to reinforce or negatively.
+- You can propagate forward in video which means that you can get a mask and track that object in the video
+- Implications of this is to perform operations on the mask, eg. delete the object, swap it, enhance it, etc
+
 11/21/2025
 - Requested access for SAM3
 - Add depth estimator model: [Depth Anything](https://github.com/DepthAnything/Depth-Anything-V2)
