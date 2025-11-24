@@ -1,21 +1,25 @@
+11/24/2025
+Got modal working. I can now call SAM3 on any sized GPU from the repo
+This makes it easy to run the model in general but also ready to serve on an app 
+
 11/23/2025
-Read "In the blink of an eye" which is the memoirs of a film editor
+Read "In the blink of an eye" which are the memoirs of a film editor
 In the 90s, the industry went from mechanical to digital when computer memory got really cheap
-Over night the industry went from Linear Video Editing to Random Access Editing, fully digital. 
-The implications are major and obvious but also subtle and negative. 
-In an extreme exercise to imagine the future, he thinks of a crewless, individual creator that is able to will scenes from his mind and how would that creative process will fare about. This future has already arrived
+Over night the industry went from Linear Video Editing to Random Access Editing, fully digital
+The implications are major and obvious but also subtle and negative
+In an extreme exercise to imagine the future, he thinks of a crewless, individual creator that is able to will scenes from his mind into existance and how that creative process fares out. This is the future that has already arrived.
 
 11/22/2025
 Spent the morning getting an NVIDIA Orin to load SAM3. After 2 hrs of battling with pytorch, turns out the model is actually 3GB in FP16 which everything included for inference, it maxes out the formidable yet unusable 8GB RAM 
 Best is to pay 9 bucks for google collab and run on an L4 GPU
-SAM is impressive. Few notes:  
-- You can "click" to indicate to model what you want to segment. Either positively to reinforce or negatively.
+Ran SAM on collab, it's impressive:
+- You can "click" to indicate to model what you want to segment. Either click "positively" or "negatively".
 - You can propagate forward in video which means that you can get a mask and track that object in the video
 - Implications of this is to perform operations on the mask, eg. delete the object, swap it, enhance it, etc
 
 11/21/2025
 - Requested access for SAM3
-- Add depth estimator model: [Depth Anything](https://github.com/DepthAnything/Depth-Anything-V2)
+- Added depth estimator model: [Depth Anything](https://github.com/DepthAnything/Depth-Anything-V2)
 
 11/19/2025
 Found a list of pedestrian datasets here: https://gitlab.tu-clausthal.de/pka20/Trajectory-Prediction-Pedestrian/-/tree/master
@@ -27,13 +31,14 @@ WOMD-Reasoning [ICML 2025](https://github.com/yhli123/WOMD-Reasoning). Language 
 
 11/18/2025
 next: 
-- get eval dataset, get precision/recall metrics
+- add depth estimation (done)
 - add temporal segmentation, emit an event on phase change
-- add depth estimation
 - add anomaly detection
 - add tracking + forecast (world model)
 - investigate how embeddings are used 
 - refactor pipeline to a dag, should run in parallel
+- get eval dataset, get precision/recall metrics
+- Wire up in a UI 
 
 - I would feel proud to build reasoning for video. Works well with my story at Harvey
 - "YOLO / SAM / trackers run at 30–90 FPS"
