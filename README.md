@@ -1,6 +1,6 @@
 # Vision 
 
-In this repo I'm learning modern computer vision techniques. The idea is to an api with primitives (eg. segmentation, scene understanding, tracking) that makes it easy to experiment, eval and develop product ideas.  
+In this repo I'm learning modern computer vision techniques. The idea is to build primitives (eg. segmentation, scene understanding, tracking) to experiment easily, eval and develop product ideas.  
 
 I'm currently using a Logicam c920s Pro 1080 and a Sony A5000 and M3 18GB.
 
