@@ -1,15 +1,14 @@
 # Vision 
 
-This project is a backend repo where I'm learning what's possible in the world of computer vision today.  
-The idea is to have primitives to experiment with evals and product ideas.  
+In this repo I'm learning modern computer vision techniques. The idea is to an api with primitives (eg. segmentation, scene understanding, tracking) that makes it easy to experiment, eval and develop product ideas.  
 
-I'm currently using a Logicam c920s Pro 1080 and a Sony A5000 and M3 16GB for local inference. 
+I'm currently using a Logicam c920s Pro 1080 and a Sony A5000 and M3 18GB.
 
-Some cool end golas could be to build:
-- Eagle view with multi cameras
-- 3d objection projections
-- A video editor that lets you mask objects with temporal consistency
-- Video search on events
+Some cool end goals could be:
+- Eagle view fusing several cameras
+- A natural language video editor  
+- Search and retrieval on video
+- A video agent that does all of the above
 
 | Tasks | Description | Implemented |
 |------|-------------|-------------|
@@ -41,10 +40,12 @@ birdview/
 │   │   └── pipeline.py         # Vision processing
 │   └── vision/                 
 │       ├── __init__.py
-│       ├── detector.py         # Object detection (YOLO)
+│       ├── detector.py         # Object detection
 │       ├── optical_flow.py     # Optical flow estimation
 │       ├── scene_graph.py      # Scene understanding with VLMs
 │       └── tracker.py          # Object tracking
+├── modal/
+│   └── cli.py                  # Remote GPU inference 
 ├── yolov8n.pt                  # YOLOv8 detection model
 ├── yolov8n-seg.pt              # YOLOv8 segmentation model
 ├── yolov8n-pose.pt             # YOLOv8 pose estimation model
@@ -52,13 +53,20 @@ birdview/
 ├── connect_alpha5000.sh        # Sony A5000 connection script
 └── README.md
 ```
+## Setup
+
+```bash
+pip install -e .
+brew install ollama
+brew services start ollama
+ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
+```
+
 ## Usage
 
 ```bash
 python3 -m bird.cli                    
-python3 -m bird.cli --camera-index 1 
 python3 -m bird.cli --enable-scene-graph --model llava:13b
-python3 -m bird.cli --enable-scene-graph --model gpt-4o
 
 --camera-index N          # Webcam index (default: 0)
 --vlm [ollama|openai]     # defaults ollama
@@ -66,9 +74,4 @@ python3 -m bird.cli --enable-scene-graph --model gpt-4o
 --enable-tracking         
 --enable-box              
 --enable-depth
-
-# To install ollama vlm
-brew install ollama
-brew services start ollama
-ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
 ```
