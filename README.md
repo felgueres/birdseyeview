@@ -89,7 +89,7 @@ Added an interactive UI and server app to quickly test.
 It accepts images and lets you select different tasks from the bird backend + modalo
 
 ```bash
-python3 backend/app.py
+python3 server/app.py
 ```
 
 <picture>
