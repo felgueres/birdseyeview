@@ -84,7 +84,13 @@ modal app list
 
 ## Interactive
 
-Added an interactive UI to quickly test. For now it accepts images and lets you select different tasks from the bird backend and modal as well.
+
+Added an interactive UI and server app to quickly test.  
+It accepts images and lets you select different tasks from the bird backend + modalo
+
+```bash
+python3 backend/app.py
+```
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="/docs/interactive_ui.png">
