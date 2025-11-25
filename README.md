@@ -74,4 +74,19 @@ python3 -m bird.cli --enable-scene-graph --model llava:13b
 --enable-tracking         
 --enable-box              
 --enable-depth
+
+# to deploy modal remotes 
+modal deploy modal/cli.py
+# to stop the app 
+modal app stop birdview
+modal app list
 ```
+
+## Interactive
+
+Added an interactive UI to quickly test. For now it accepts images and lets you select different tasks from the bird backend and modal as well.
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="/docs/interactive_ui.png">
+  <img alt="tiny corp logo" src="/docs/interactive_ui.png" width="50%" height="50%">
+</picture>

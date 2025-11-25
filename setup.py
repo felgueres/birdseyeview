@@ -17,9 +17,10 @@ setup(
         "Pillow>=10.0.0",
         "ollama",  # For local LLaVA scene graph generation
         "openai",
-        "networkx>=2.5",  # For scene graph visualization
-        "matplotlib>=3.3.0",  # For scene graph plotting
+        "networkx>=2.5",
+        "matplotlib>=3.3.0",
         "huggingface_hub>=0.26.0",
-        "modal>=1.2.4"
+        "modal>=1.2.4",
+        "flask>=3.0.0"
     ] 
 )

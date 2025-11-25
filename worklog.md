@@ -1,3 +1,9 @@
+11/25/2025
+Added UI and wired up with remote inference.
+Inference latency seems to heavily depend on image size.
+The dopamine from working with images is incredible, very different than text.
+Considering buying a few cameras and switch box to attempt a Tesla-like, 3d representation of my home. But I think it's best to keep constraints for now otherwise it'll be noise in the learning process.
+
 11/24/2025
 Got modal working. I can now call SAM3 on any sized GPU from the repo
 This makes it easy to run the model in general but also ready to serve on an app 

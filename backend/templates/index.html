@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BirdView</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .controls {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #b0b0b0;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #0052a3;
+        }
+
+        button:disabled {
+            background: #404040;
+            cursor: not-allowed;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+
+        #canvas {
+            max-width: 100%;
+            cursor: crosshair;
+            border: 1px solid #404040;
+            border-radius: 4px;
+        }
+
+        .sidebar {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            height: fit-content;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            color: #b0b0b0;
+            font-size: 12px;
+        }
+
+        .mode-btn.active {
+            background: #0066cc;
+            color: white;
+            border-color: #0066cc;
+        }
+
+        .points-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .point-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .point-positive {
+            border-left: 3px solid #00cc66;
+        }
+
+        .point-negative {
+            border-left: 3px solid #cc0000;
+        }
+
+        .point-remove {
+            background: #cc0000;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .mask-item {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .info {
+            font-size: 12px;
+            color: #808080;
+            margin-top: 10px;
+        }
+
+        .loading {
+            color: #0066cc;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .mask-selector {
+            margin-top: 15px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .mask-selector h4 {
+            font-size: 12px;
+            color: #b0b0b0;
+            margin-bottom: 10px;
+        }
+
+        .mask-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mask-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: #2a2a2a;
+            border: 2px solid #404040;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mask-option:hover {
+            border-color: #0066cc;
+        }
+
+        .mask-option.selected {
+            border-color: #0066cc;
+            background: #003366;
+        }
+
+        .mask-option-label {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mask-option-score {
+            font-size: 11px;
+            color: #b0b0b0;
+        }
+
+        .mask-option.selected .mask-option-score {
+            color: #66b3ff;
+        }
+
+        .apply-mask-btn {
+            margin-top: 10px;
+            width: 100%;
+            background: #00cc66;
+        }
+
+        .apply-mask-btn:hover {
+            background: #00a352;
+        }
+
+        .apply-mask-btn:disabled {
+            background: #404040;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <input type="file" id="imageUpload" accept="image/*">
+            </div>
+
+            <div class="control-group">
+                <select id="methodSelect">
+                    <option value="interactive">[SAM3] Interactive</option>
+                    <option value="text">[SAM3] Prompt</option>
+                    <option value="detect">[Yolo] Object Detection</option>
+                    <option value="depth">[DepthAnything] Depth Estimation</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="textPromptGroup" style="display: none;">
+                <label>Text Prompt</label>
+                <input type="text" id="textPrompt" placeholder="e.g., 'groceries'">
+            </div>
+
+            <div>
+                <button id="runBtn" disabled>Run</button>
+                <button id="clearBtn">Clear Points</button>
+            </div>
+        </div>
+
+        <div class="workspace">
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+                <div class="info" id="imageInfo"></div>
+                <div class="loading" id="loadingText" style="display: none;"></div>
+            </div>
+
+            <div class="sidebar">
+                <div class="mode-selector" id="pointMode">
+                    <button class="mode-btn active" data-label="1">Positive (+)</button>
+                    <button class="mode-btn" data-label="0">Negative (-)</button>
+                </div>
+
+                <div class="control-group">
+                    <label>Points</label>
+                    <div class="points-list" id="pointsList"></div>
+                </div>
+
+                <div class="results" id="results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const imageUpload = document.getElementById('imageUpload');
+        const methodSelect = document.getElementById('methodSelect');
+        const textPromptGroup = document.getElementById('textPromptGroup');
+        const textPrompt = document.getElementById('textPrompt');
+        const runBtn = document.getElementById('runBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const pointsList = document.getElementById('pointsList');
+        const results = document.getElementById('results');
+        const imageInfo = document.getElementById('imageInfo');
+        const loadingText = document.getElementById('loadingText');
+        const pointMode = document.getElementById('pointMode');
+
+        let currentImage = null;
+        let imageId = null;
+        let points = [];
+        let currentLabel = 1; // 1 = positive, 0 = negative
+        let masks = [];
+        let maskScores = [];
+        let selectedMaskIndex = 0;
+
+        // Mode selector
+        pointMode.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pointMode.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentLabel = parseInt(btn.dataset.label);
+            });
+        });
+
+        // Method selector
+        methodSelect.addEventListener('change', () => {
+            const method = methodSelect.value;
+            textPromptGroup.style.display = method === 'text' ? 'block' : 'none';
+            pointMode.style.display = method === 'interactive' ? 'flex' : 'none';
+
+            if (method !== 'interactive') {
+                points = [];
+                updatePointsList();
+            }
+        });
+
+        // Image upload
+        imageUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                loadingText.style.display = 'block';
+                loadingText.textContent = 'Uploading image...';
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                imageId = data.image_id;
+
+                // Load image on canvas
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    currentImage = img;
+                    runBtn.disabled = false;
+                    imageInfo.textContent = `Image: ${data.filename} (${data.width}x${data.height})`;
+                };
+                img.src = `/api/image/${imageId}`;
+
+                loadingText.style.display = 'none';
+            } catch (error) {
+                console.error('Upload error:', error);
+                loadingText.textContent = 'Upload failed: ' + error.message;
+            }
+        });
+
+        // Canvas click for points
+        canvas.addEventListener('click', (e) => {
+            if (!currentImage || methodSelect.value !== 'interactive') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+
+            points.push({ x, y, label: currentLabel });
+            updatePointsList();
+            redrawCanvas();
+        });
+
+        function updatePointsList() {
+            pointsList.innerHTML = points.map((p, i) => `
+                <div class="point-item ${p.label === 1 ? 'point-positive' : 'point-negative'}">
+                    <span>${p.label === 1 ? '+' : '-'} (${p.x}, ${p.y})</span>
+                    <button class="point-remove" onclick="removePoint(${i})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function removePoint(index) {
+            points.splice(index, 1);
+            updatePointsList();
+            redrawCanvas();
+        }
+
+        function redrawCanvas() {
+            if (!currentImage) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(currentImage, 0, 0);
+
+            // Draw selected mask only
+            if (masks.length > 0 && selectedMaskIndex < masks.length) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.globalAlpha = 0.5;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    ctx.globalAlpha = 1.0;
+
+                    // Draw points on top
+                    points.forEach(p => {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+                        ctx.fillStyle = p.label === 1 ? '#00cc66' : '#cc0000';
+                        ctx.fill();
+                        ctx.strokeStyle = 'white';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    });
+                };
+                img.src = 'data:image/png;base64,' + masks[selectedMaskIndex];
+            } else {
+                // Draw points without mask
+                points.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = p.label === 1 ? '#00cc66' : '#cc0000';
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+            }
+        }
+
+        function selectMask(index) {
+            selectedMaskIndex = index;
+            document.querySelectorAll('.mask-option').forEach((opt, i) => {
+                if (i === index) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+            redrawCanvas();
+        }
+
+        function showMaskSelector() {
+            if (masks.length === 0) return '';
+
+            return `
+                <div class="mask-selector">
+                    <h4>Select Mask (${masks.length} options)</h4>
+                    <div class="mask-options">
+                        ${masks.map((mask, i) => `
+                            <div class="mask-option ${i === selectedMaskIndex ? 'selected' : ''}"
+                                 onclick="selectMask(${i})">
+                                <div class="mask-option-label">
+                                    <span>Mask ${i + 1}</span>
+                                </div>
+                                <div class="mask-option-score">
+                                    Score: ${maskScores[i] ? maskScores[i].toFixed(3) : 'N/A'}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        clearBtn.addEventListener('click', () => {
+            points = [];
+            masks = [];
+            maskScores = [];
+            selectedMaskIndex = 0;
+            updatePointsList();
+            redrawCanvas();
+            results.innerHTML = '';
+        });
+
+        runBtn.addEventListener('click', async () => {
+            if (!imageId) return;
+
+            const method = methodSelect.value;
+            loadingText.style.display = 'block';
+            results.innerHTML = '';
+
+            try {
+                if (method === 'interactive') {
+                    if (points.length === 0) {
+                        alert('Click on the image to add points first!');
+                        loadingText.style.display = 'none';
+                        return;
+                    }
+
+                    loadingText.textContent = 'Running SAM3 interactive segmentation...';
+
+                    const response = await fetch('/api/segment/interactive', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image_id: imageId,
+                            point_coords: points.map(p => [p.x, p.y]),
+                            point_labels: points.map(p => p.label)
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        masks = data.masks || [];
+                        maskScores = data.scores || [];
+                        selectedMaskIndex = 0;
+                        results.innerHTML = `
+                            <h3>Results</h3>
+                            <div>Generated ${data.num_masks} masks</div>
+                            ${showMaskSelector()}
+                        `;
+                        redrawCanvas();
+                    } else {
+                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                    }
+
+                } else if (method === 'text') {
+                    const prompt = textPrompt.value.trim();
+                    if (!prompt) {
+                        alert('Enter a text prompt!');
+                        loadingText.style.display = 'none';
+                        return;
+                    }
+
+                    loadingText.textContent = 'Running SAM3 text segmentation...';
+
+                    const response = await fetch('/api/segment/text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image_id: imageId,
+                            text_prompt: prompt
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        masks = data.masks || [];
+                        maskScores = data.scores || [];
+                        selectedMaskIndex = 0;
+                        results.innerHTML = `
+                            <h3>Results</h3>
+                            <div>Found ${data.num_detections} objects</div>
+                            ${showMaskSelector()}
+                        `;
+                        redrawCanvas();
+                    } else {
+                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                    }
+
+                } else if (method === 'detect') {
+                    loadingText.textContent = 'Running object detection...';
+
+                    const response = await fetch('/api/detect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image_id: imageId,
+                            enable_segmentation: true
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        masks = data.detections.map(d => d.mask).filter(m => m);
+                        maskScores = data.detections.map(d => d.confidence);
+                        selectedMaskIndex = 0;
+                        results.innerHTML = `
+                            <h3>Detections</h3>
+                            <div>Found ${data.count} objects</div>
+                            ${showMaskSelector()}
+                        `;
+                        redrawCanvas();
+                    } else {
+                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                    }
+
+                } else if (method === 'depth') {
+                    loadingText.textContent = 'Estimating depth...';
+
+                    const response = await fetch('/api/depth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image_id: imageId,
+                            return_visualization: true
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        results.innerHTML = `
+                            <h3>Depth Statistics</h3>
+                            <div class="mask-item">
+                                Mean: ${data.statistics.mean_depth.toFixed(3)}<br>
+                                Median: ${data.statistics.median_depth.toFixed(3)}<br>
+                                Min: ${data.statistics.min_depth.toFixed(3)}<br>
+                                Max: ${data.statistics.max_depth.toFixed(3)}
+                            </div>
+                        `;
+
+                        if (data.visualization) {
+                            const img = new Image();
+                            img.onload = () => {
+                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            };
+                            img.src = 'data:image/jpeg;base64,' + data.visualization;
+                        }
+                    } else {
+                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                    }
+                }
+
+                loadingText.style.display = 'none';
+            } catch (error) {
+                console.error('Error:', error);
+                loadingText.textContent = 'Error: ' + error.message;
+                results.innerHTML = `<div style="color: #cc0000;">Error: ${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
