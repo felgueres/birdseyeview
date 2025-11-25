@@ -13,7 +13,7 @@ load_dotenv()
 def main():
     """BirdView CLI - Computer Vision Pipeline Runner"""
     parser = argparse.ArgumentParser(description='BirdView - Computer Vision Pipeline')
-    parser.add_argument('camera', nargs='?', default='webcam', choices=['webcam', 'sony'],
+    parser.add_argument('--camera', nargs='?', default='webcam', choices=['webcam', 'sony'],
                         help='Camera source (default: webcam)')
     parser.add_argument('--camera-index', type=int, default=0,
                         help='Webcam index (default: 0)')
@@ -40,33 +40,23 @@ def main():
                         help='Background removal mode (default: mask)')
     parser.add_argument('--no-overlay', action='store_true', default=False,
                         help='Disable metrics overlay (default: overlay enabled)')
+    parser.add_argument('--record', type=str, default=None,
+                        help='Record video to file (e.g., workout.mp4)')
+    parser.add_argument('--num-frames', type=int, default=200,
+                        help='Number of frames to record (default: 200)')
+    parser.add_argument('--fps', type=int, default=30,
+                        help='FPS for recorded video (default: 30)')
     
     args = parser.parse_args()
-    
-    # Smart VLM provider and model detection
     if args.model and not args.vlm:
-        # Auto-detect provider based on model name
-        if args.model.startswith('gpt-'):
+        if args.model.startswith('gpt'):
             args.vlm = 'openai'
-        elif args.model.startswith('llava') or ':' in args.model:
+        else:
             args.vlm = 'ollama'
-        else:
-            args.vlm = 'ollama'  # default
-    elif args.vlm and not args.model:
-        # Set default model based on provider
-        if args.vlm == 'openai':
-            args.model = 'gpt-4o'
-        else:
-            args.model = 'llava:7b'
-    elif not args.vlm and not args.model:
-        # Both not specified, use defaults
-        args.vlm = 'ollama'
-        args.model = 'llava:7b'
-    
-    # Setup camera
+
     if args.camera == "sony":
         print("Connecting to Sony A5000 via WiFi...")
-        process = subprocess.Popen(
+        subprocess.Popen(
             ["./connect_alpha5000.sh", os.getenv("A5000_SSID"), os.getenv("A5000_password")], 
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -75,33 +65,41 @@ def main():
         )
         time.sleep(5)
         camera = SonyA5000()
-    else:  # webcam
-        print("Using webcam...")
+    else:
         camera = Webcam(camera_index=args.camera_index)
     
-    vision_config = VisionConfig(
-        enable_scene_graph=args.enable_scene_graph, 
-        enable_tracking=args.enable_tracking,
-        enable_segmentation=args.enable_segmentation,
-        enable_box=args.enable_box or args.enable_segmentation,
-        enable_overlay=not args.no_overlay,
-        enable_depth=args.enable_depth,
-        depth_model_size=args.depth_model,
-        enable_bg_removal=args.remove_bg,
-        bg_removal_mode=args.bg_mode,
-    )
-    vision_config.scene_graph_vlm_provider = args.vlm
-    vision_config.scene_graph_vlm_model = args.model
-    
-    print(f"\n{'='*60}")
-    print(f"Camera: {args.camera}")
-    print(f"Model: {vision_config.model_name}")
-    if args.enable_scene_graph:
-        print(f"VLM: {args.vlm} ({args.model})")
-    print(f"Tracking: {args.enable_tracking}")
-    print(f"{'='*60}\n")
-    
-    run(camera, vision_config=vision_config)
+    if args.record:
+        print(f"\n{'='*60}")
+        print(f"RECORDING MODE")
+        print(f"Camera: {args.camera}")
+        print(f"Output: {args.record}")
+        print(f"Frames: {args.num_frames}")
+        print(f"FPS: {args.fps}")
+        print(f"{'='*60}\n")
+        camera.record_video(args.record, num_frames=args.num_frames, fps=args.fps)
+
+    else:
+        vision_config = VisionConfig(
+            enable_scene_graph=args.enable_scene_graph, 
+            enable_tracking=args.enable_tracking,
+            enable_segmentation=args.enable_segmentation,
+            enable_box=args.enable_box or args.enable_segmentation,
+            enable_overlay=not args.no_overlay,
+            enable_depth=args.enable_depth,
+            depth_model_size=args.depth_model,
+            enable_bg_removal=args.remove_bg,
+            bg_removal_mode=args.bg_mode,
+        )
+        vision_config.scene_graph_vlm_provider = args.vlm
+        vision_config.scene_graph_vlm_model = args.model
+        print(f"\n{'='*60}")
+        print(f"Camera: {args.camera}")
+        print(f"Model: {vision_config.model_name}")
+        if args.enable_scene_graph:
+            print(f"VLM: {args.vlm} ({args.model})")
+        print(f"Tracking: {args.enable_tracking}")
+        print(f"{'='*60}\n")
+        run(camera, vision_config=vision_config)
 
 
 if __name__ == "__main__":

@@ -14,8 +14,12 @@ class Webcam:
         self.camera_index = camera_index
         self.cap = None
     
-    def stream_frames(self):
-        """Generator that yields frames from webcam"""
+    def stream_frames(self, max_frames=None):
+        """Generator that yields frames from webcam
+        
+        Args:
+            max_frames: Optional limit on number of frames to capture
+        """
         self.cap = cv2.VideoCapture(self.camera_index)
         
         if not self.cap.isOpened():
@@ -26,6 +30,7 @@ class Webcam:
         fps = self.cap.get(cv2.CAP_PROP_FPS)
         print(f"✓ Webcam opened: {width}x{height} @ {fps}fps")
         
+        frame_count = 0
         try:
             while True:
                 ret, frame = self.cap.read()
@@ -33,9 +38,60 @@ class Webcam:
                     print("Failed to read frame from webcam")
                     break
                 yield frame
+                frame_count += 1
+                
+                # Stop if we've reached max_frames
+                if max_frames and frame_count >= max_frames:
+                    break
         finally:
             if self.cap:
                 self.cap.release()
+    
+    def record_video(self, output_path: str, num_frames: int = 200, fps: int = 30):
+        """Record a video from the webcam
+        
+        Args:
+            output_path: Path to save video (e.g., 'workout_1.mp4')
+            num_frames: Number of frames to record
+            fps: Frames per second for output video
+        """
+        writer = None
+        frame_count = 0
+        
+        try:
+            for frame in self.stream_frames(max_frames=num_frames):
+                # Initialize video writer with first frame dimensions
+                if writer is None:
+                    height, width = frame.shape[:2]
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+                    print(f"Recording {num_frames} frames to {output_path}...")
+                    print("Press 'q' to stop recording early")
+                
+                writer.write(frame)
+                frame_count += 1
+                
+                # Display frame with recording indicator
+                display_frame = frame.copy()
+                cv2.putText(display_frame, f"REC [{frame_count}/{num_frames}]", 
+                           (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.imshow('Recording', display_frame)
+                
+                # Check for 'q' key to stop early
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    print(f"\nRecording stopped early at {frame_count} frames")
+                    break
+                
+                # Print progress
+                if frame_count % 50 == 0:
+                    print(f"Recorded {frame_count}/{num_frames} frames")
+            
+            print(f"✓ Recording complete: {output_path}")
+            
+        finally:
+            if writer:
+                writer.release()
+            cv2.destroyAllWindows()
 
 class SonyA5000:
     """
@@ -93,8 +149,12 @@ class SonyA5000:
                 return True
         return False
     
-    def stream_frames(self):
-        """Generator that yields frames from camera"""
+    def stream_frames(self, max_frames=None):
+        """Generator that yields frames from camera
+        
+        Args:
+            max_frames: Optional limit on number of frames to capture
+        """
         if not self.start_recording_mode():
             raise Exception("Failed to start recording mode")
         
@@ -105,6 +165,7 @@ class SonyA5000:
         response = session.get(self.liveview_url, stream=True)
         
         buffer = b''
+        frame_count = 0
         
         for chunk in response.iter_content(chunk_size=8192):
             buffer += chunk
@@ -126,3 +187,54 @@ class SonyA5000:
                 
                 if frame is not None:
                     yield frame
+                    frame_count += 1
+                    
+                    # Stop if we've reached max_frames
+                    if max_frames and frame_count >= max_frames:
+                        return
+    
+    def record_video(self, output_path: str, num_frames: int = 200, fps: int = 30):
+        """Record a video from the camera
+        
+        Args:
+            output_path: Path to save video (e.g., 'workout_1.mp4')
+            num_frames: Number of frames to record
+            fps: Frames per second for output video
+        """
+        writer = None
+        frame_count = 0
+        
+        try:
+            for frame in self.stream_frames(max_frames=num_frames):
+                # Initialize video writer with first frame dimensions
+                if writer is None:
+                    height, width = frame.shape[:2]
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+                    print(f"Recording {num_frames} frames to {output_path}...")
+                    print("Press 'q' to stop recording early")
+                
+                writer.write(frame)
+                frame_count += 1
+                
+                # Display frame with recording indicator
+                display_frame = frame.copy()
+                cv2.putText(display_frame, f"REC [{frame_count}/{num_frames}]", 
+                           (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.imshow('Recording', display_frame)
+                
+                # Check for 'q' key to stop early
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    print(f"\nRecording stopped early at {frame_count} frames")
+                    break
+                
+                # Print progress
+                if frame_count % 50 == 0:
+                    print(f"Recorded {frame_count}/{num_frames} frames")
+            
+            print(f"✓ Recording complete: {output_path}")
+            
+        finally:
+            if writer:
+                writer.release()
+            cv2.destroyAllWindows()
