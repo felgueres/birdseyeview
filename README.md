@@ -1,18 +1,16 @@
 # Vision 
 
-<picture>
-  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px"">
-</picture>
-
-In this repo I'm learning modern computer vision techniques. The idea is to build primitives (eg. segmentation, scene understanding, tracking) to experiment easily, eval and develop product ideas.  
-
-I'm currently using a Logicam c920s Pro 1080 and a Sony A5000 and M3 18GB.
+This project builds computer vision primitives and an interactive UI to experiment, eval and develop product ideas.  
 
 Some cool end goals could be:
 - Eagle view fusing several cameras
 - A natural language video editor  
 - Search and retrieval on video
 - A video agent that does all of the above
+
+<picture> 
+  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px""> 
+</picture>
 
 | Tasks | Description | Implemented |
 |------|-------------|-------------|
