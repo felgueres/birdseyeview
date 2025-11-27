@@ -30,29 +30,43 @@
             color: var(--ink);
             font-size: 14px;
             letter-spacing: 0.01em;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            display: flex;
+            height: 100vh;
         }
 
         h1 {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             font-size: 20px;
             font-weight: 700;
             letter-spacing: 0.08em;
             color: var(--ink);
         }
 
-        .controls {
+        .control-panel {
+            width: 450px;
+            max-width: 450px;
+            min-width: 450px;
+            height: 100vh;
             background: var(--table-bg);
-            padding: 16px;
-            border: 1px solid var(--border);
-            margin-bottom: 16px;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .controls {
+            background: transparent;
+            padding: 0;
+            border: none;
+            margin-bottom: 20px;
         }
 
         .control-group {
@@ -75,9 +89,13 @@
 
         #videoPlayer {
             width: 100%;
-            max-width: 100%;
+            max-width: 900px;
             background: #000;
-            border: 1px solid var(--border);
+            border: none;
+        }
+
+        #videoPlayer:not(.hidden) {
+            display: block;
         }
 
         #chartCanvas {
@@ -96,7 +114,7 @@
         }
 
         .segment-list {
-            max-height: 500px;
+            max-height: 300px;
             overflow-y: auto;
             margin-top: 12px;
         }
@@ -126,10 +144,13 @@
         }
 
         .video-controls {
-            display: flex;
             align-items: center;
             gap: 10px;
             margin-top: 10px;
+        }
+
+        .video-controls:not(.hidden) {
+            display: flex;
         }
 
         input[type="range"] {
@@ -208,9 +229,16 @@
             opacity: 0.6;
         }
 
+        .main-content {
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
         .workspace {
-            display: grid;
-            grid-template-columns: 1fr 300px;
+            display: flex;
+            flex-direction: column;
             gap: 20px;
         }
 
@@ -228,11 +256,10 @@
             background: #fff;
         }
 
-        .sidebar {
+        .analysis-section {
             background: var(--table-bg);
             padding: 16px;
             border: 1px solid var(--border);
-            height: fit-content;
         }
 
         .mode-selector {
@@ -258,7 +285,7 @@
 
         .points-list {
             margin-top: 15px;
-            max-height: 200px;
+            max-height: 150px;
             overflow-y: auto;
         }
 
@@ -391,98 +418,100 @@
 </head>
 <body>
     <div class="container">
-        <h1>BirdView</h1>
+        <div class="control-panel">
+            <h1>BirdView</h1>
 
-        <div class="controls">
-            <div class="control-group">
-                <label>Upload File</label>
-                <input type="file" id="fileUpload" accept="image/*,video/*">
-            </div>
-
-            <div id="imageControls" class="hidden">
+            <div class="controls">
                 <div class="control-group">
-                    <label>Method</label>
-                    <select id="methodSelect">
-                        <option value="interactive">[SAM3] Interactive</option>
-                        <option value="text">[SAM3] Prompt</option>
-                        <option value="detect">[Yolo] Object Detection</option>
-                        <option value="depth">[DepthAnything] Depth Estimation</option>
-                    </select>
+                    <label>Upload File</label>
+                    <input type="file" id="fileUpload" accept="image/*,video/*">
                 </div>
 
-                <div class="control-group" id="textPromptGroup" style="display: none;">
-                    <label>Text Prompt</label>
-                    <input type="text" id="textPrompt" placeholder="e.g., 'groceries'">
+                <div id="imageControls" class="hidden">
+                    <div class="control-group">
+                        <label>Method</label>
+                        <select id="methodSelect">
+                            <option value="interactive">[SAM3] Interactive</option>
+                            <option value="text">[SAM3] Prompt</option>
+                            <option value="detect">[Yolo] Object Detection</option>
+                            <option value="depth">[DepthAnything] Depth Estimation</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group" id="textPromptGroup" style="display: none;">
+                        <label>Text Prompt</label>
+                        <input type="text" id="textPrompt" placeholder="e.g., 'groceries'">
+                    </div>
+
+                    <div id="imageSidebar" class="hidden">
+                        <div class="mode-selector" id="pointMode">
+                            <button class="mode-btn active" data-label="1">Positive (+)</button>
+                            <button class="mode-btn" data-label="0">Negative (-)</button>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Points</label>
+                            <div class="points-list" id="pointsList"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button id="runBtn" disabled>Run</button>
+                        <button id="clearBtn">Clear Points</button>
+                    </div>
                 </div>
 
-                <div>
-                    <button id="runBtn" disabled>Run</button>
-                    <button id="clearBtn">Clear Points</button>
-                </div>
-            </div>
+                <div id="videoControls" class="hidden">
+                    <div class="control-group">
+                        <label>Detection Method</label>
+                        <select id="videoMethodSelect">
+                            <option value="threshold">Threshold</option>
+                            <option value="derivative">Derivative</option>
+                            <option value="adaptive">Adaptive</option>
+                        </select>
+                    </div>
 
-            <div id="videoControls" class="hidden">
-                <div class="control-group">
-                    <label>Detection Method</label>
-                    <select id="videoMethodSelect">
-                        <option value="threshold">Threshold</option>
-                        <option value="derivative">Derivative</option>
-                        <option value="adaptive">Adaptive</option>
-                    </select>
-                </div>
+                    <div class="control-group">
+                        <label>Similarity Threshold (0.0-1.0)</label>
+                        <input type="number" id="thresholdInput" min="0" max="1" step="0.01" value="0.85">
+                    </div>
 
-                <div class="control-group">
-                    <label>Similarity Threshold (0.0-1.0)</label>
-                    <input type="number" id="thresholdInput" min="0" max="1" step="0.01" value="0.85">
-                </div>
+                    <div class="control-group">
+                        <label>Sample Rate (1=every frame)</label>
+                        <input type="number" id="sampleRateInput" min="1" max="10" step="1" value="1">
+                    </div>
 
-                <div class="control-group">
-                    <label>Sample Rate (1=every frame)</label>
-                    <input type="number" id="sampleRateInput" min="1" max="10" step="1" value="1">
-                </div>
+                    <div>
+                        <button id="runSegmentBtn" disabled>Segment Video</button>
+                    </div>
 
-                <div>
-                    <button id="runSegmentBtn" disabled>Segment Video</button>
+                    <div id="videoSidebar" class="hidden">
+                        <h3 style="margin-bottom: 15px; margin-top: 20px; font-size: 16px;">Segments</h3>
+                        <div class="segment-list" id="segmentList"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="workspace">
-            <div class="canvas-container">
-                <canvas id="canvas" class="hidden"></canvas>
-                <video id="videoPlayer" class="hidden" controls></video>
+        <div class="main-content">
+            <div class="workspace">
+                <div class="canvas-container hidden" id="canvasContainer">
+                    <canvas id="canvas" class="hidden"></canvas>
+                    <video id="videoPlayer" class="hidden"></video>
 
-                <div id="videoPlayerControls" class="video-controls hidden">
-                    <button id="playPauseBtn" disabled>Play</button>
-                    <input type="range" id="videoSeekBar" min="0" max="100" value="0" disabled>
-                    <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+                    <div id="videoPlayerControls" class="video-controls hidden">
+                        <button id="playPauseBtn" disabled>Play</button>
+                        <input type="range" id="videoSeekBar" min="0" max="100" value="0" disabled>
+                        <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+                    </div>
+
+                    <div class="info" id="fileInfo"></div>
+                    <div class="loading" id="loadingText" style="display: none;"></div>
                 </div>
 
                 <canvas id="chartCanvas" class="hidden"></canvas>
 
-                <div class="info" id="fileInfo"></div>
-                <div class="loading" id="loadingText" style="display: none;"></div>
-            </div>
-
-            <div class="sidebar">
-                <div id="imageSidebar" class="hidden">
-                    <div class="mode-selector" id="pointMode">
-                        <button class="mode-btn active" data-label="1">Positive (+)</button>
-                        <button class="mode-btn" data-label="0">Negative (-)</button>
-                    </div>
-
-                    <div class="control-group">
-                        <label>Points</label>
-                        <div class="points-list" id="pointsList"></div>
-                    </div>
-
-                    <div class="results" id="results"></div>
-                </div>
-
-                <div id="videoSidebar" class="hidden">
-                    <h3 style="margin-bottom: 15px; font-size: 16px;">Segments</h3>
-                    <div class="segment-list" id="segmentList"></div>
-                </div>
+                <div id="results" class="analysis-section hidden"></div>
             </div>
         </div>
     </div>
@@ -494,12 +523,14 @@
         const ctx = canvas.getContext('2d');
         const fileUpload = document.getElementById('fileUpload');
         const videoPlayer = document.getElementById('videoPlayer');
+        const canvasContainer = document.getElementById('canvasContainer');
 
         const imageControls = document.getElementById('imageControls');
         const videoControls = document.getElementById('videoControls');
         const imageSidebar = document.getElementById('imageSidebar');
         const videoSidebar = document.getElementById('videoSidebar');
         const videoPlayerControls = document.getElementById('videoPlayerControls');
+        const resultsSection = document.getElementById('results');
         const chartCanvas = document.getElementById('chartCanvas');
 
         const methodSelect = document.getElementById('methodSelect');
@@ -563,14 +594,18 @@
             const isVideo = file.type.startsWith('video/');
             currentFileType = isVideo ? 'video' : 'image';
 
+            canvasContainer.classList.add('hidden');
             canvas.classList.add('hidden');
             videoPlayer.classList.add('hidden');
+            videoPlayer.pause();
+            videoPlayer.src = '';
             videoPlayerControls.classList.add('hidden');
             chartCanvas.classList.add('hidden');
             imageControls.classList.add('hidden');
             videoControls.classList.add('hidden');
             imageSidebar.classList.add('hidden');
             videoSidebar.classList.add('hidden');
+            resultsSection.classList.add('hidden');
 
             const formData = new FormData();
             formData.append('file', file);
@@ -587,6 +622,7 @@
                     const data = await response.json();
                     fileId = data.video_id;
 
+                    canvasContainer.classList.remove('hidden');
                     videoPlayer.src = `/api/video/${fileId}`;
                     videoPlayer.load();
                     videoPlayer.classList.remove('hidden');
@@ -618,9 +654,11 @@
                     };
                     img.src = `/api/image/${fileId}`;
 
+                    canvasContainer.classList.remove('hidden');
                     canvas.classList.remove('hidden');
                     imageControls.classList.remove('hidden');
                     imageSidebar.classList.remove('hidden');
+                    resultsSection.classList.remove('hidden');
                 }
 
                 loadingText.style.display = 'none';
@@ -742,7 +780,7 @@
             selectedMaskIndex = 0;
             updatePointsList();
             redrawCanvas();
-            results.innerHTML = '';
+            resultsSection.innerHTML = '';
         });
 
         runBtn.addEventListener('click', async () => {
@@ -750,7 +788,7 @@
 
             const method = methodSelect.value;
             loadingText.style.display = 'block';
-            results.innerHTML = '';
+            resultsSection.innerHTML = '';
 
             try {
                 if (method === 'interactive') {
@@ -778,14 +816,14 @@
                         masks = data.masks || [];
                         maskScores = data.scores || [];
                         selectedMaskIndex = 0;
-                        results.innerHTML = `
+                        resultsSection.innerHTML = `
                             <h3>Results</h3>
                             <div>Generated ${data.num_masks} masks</div>
                             ${showMaskSelector()}
                         `;
                         redrawCanvas();
                     } else {
-                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                        resultsSection.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
                     }
 
                 } else if (method === 'text') {
@@ -813,14 +851,14 @@
                         masks = data.masks || [];
                         maskScores = data.scores || [];
                         selectedMaskIndex = 0;
-                        results.innerHTML = `
+                        resultsSection.innerHTML = `
                             <h3>Results</h3>
                             <div>Found ${data.num_detections} objects</div>
                             ${showMaskSelector()}
                         `;
                         redrawCanvas();
                     } else {
-                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                        resultsSection.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
                     }
 
                 } else if (method === 'detect') {
@@ -841,14 +879,14 @@
                         masks = data.detections.map(d => d.mask).filter(m => m);
                         maskScores = data.detections.map(d => d.confidence);
                         selectedMaskIndex = 0;
-                        results.innerHTML = `
+                        resultsSection.innerHTML = `
                             <h3>Detections</h3>
                             <div>Found ${data.count} objects</div>
                             ${showMaskSelector()}
                         `;
                         redrawCanvas();
                     } else {
-                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                        resultsSection.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
                     }
 
                 } else if (method === 'depth') {
@@ -866,7 +904,7 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        results.innerHTML = `
+                        resultsSection.innerHTML = `
                             <h3>Depth Statistics</h3>
                             <div class="mask-item">
                                 Mean: ${data.statistics.mean_depth.toFixed(3)}<br>
@@ -885,7 +923,7 @@
                             img.src = 'data:image/jpeg;base64,' + data.visualization;
                         }
                     } else {
-                        results.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
+                        resultsSection.innerHTML = `<div style="color: #cc0000;">Error: ${data.error}</div>`;
                     }
                 }
 
@@ -893,7 +931,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 loadingText.textContent = 'Error: ' + error.message;
-                results.innerHTML = `<div style="color: #cc0000;">Error: ${error.message}</div>`;
+                resultsSection.innerHTML = `<div style="color: #cc0000;">Error: ${error.message}</div>`;
             }
         });
 

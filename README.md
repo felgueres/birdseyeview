@@ -25,9 +25,7 @@ Some cool end goals could be:
 | Temporal segmentation | Split by activity phases. Timeline segments. | X |
 | Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. | |
 | Action recognition | What's happening in video. Action labels + time segments. | |
-| Anomaly detection | Detect unusual behavior, appearance or events. Anomaly score. | |
 | Object tracking + prediction | Track + forecast future positions. Trajectory with predicted path. | |
-| 3D Object detection | Detect objects in 3D space (position, orientation, size). 3D boxes in world coordinates. | |
 | Re-identificatino (ReID) | Recognize a previously seen object or in another camera. Produces embedding vector + id match. | |
 
 ```
@@ -86,9 +84,7 @@ modal app list
 
 ## Interactive
 
-
-Added an interactive UI and server app to quickly test.  
-It accepts images and lets you select different tasks from the bird backend + modal
+Lightweight ui to test tasks.  
 
 ```bash
 python3 server/app.py
