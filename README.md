@@ -1,5 +1,9 @@
 # Vision 
 
+<picture>
+  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="350px"">
+</picture>
+
 In this repo I'm learning modern computer vision techniques. The idea is to build primitives (eg. segmentation, scene understanding, tracking) to experiment easily, eval and develop product ideas.  
 
 I'm currently using a Logicam c920s Pro 1080 and a Sony A5000 and M3 18GB.
@@ -86,17 +90,8 @@ modal app list
 
 
 Added an interactive UI and server app to quickly test.  
-It accepts images and lets you select different tasks from the bird backend + modalo
+It accepts images and lets you select different tasks from the bird backend + modal
 
 ```bash
 python3 server/app.py
 ```
-
-<picture>
-  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="300px"">
-</picture>
-
-<picture>
-  <img alt="t seg" src="/docs/t_seg.png" width="300px">
-</picture>
-
