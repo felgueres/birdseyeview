@@ -1,7 +1,7 @@
 # Vision 
 
 <picture>
-  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="350px"">
+  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px"">
 </picture>
 
 In this repo I'm learning modern computer vision techniques. The idea is to build primitives (eg. segmentation, scene understanding, tracking) to experiment easily, eval and develop product ideas.  
