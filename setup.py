@@ -15,12 +15,14 @@ setup(
         "ultralytics>=8.0.0",
         "python-dotenv",
         "Pillow>=10.0.0",
-        "ollama",  # For local LLaVA scene graph generation
+        "ollama",
         "openai",
         "networkx>=2.5",
         "matplotlib>=3.3.0",
         "huggingface_hub>=0.26.0",
         "modal>=1.2.4",
-        "flask>=3.0.0"
+        "flask>=3.0.0",
+        "torch>=2.0.0",
+        "transformers>=4.30.0"
     ] 
 )

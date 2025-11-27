@@ -1,3 +1,7 @@
+11/26/2025
+Temporal segmentation is done with calculating the distance between frames. 
+You can either compute features classically or use an embedding model.
+
 11/25/2025
 Added UI and wired up with remote inference.
 Inference latency seems to heavily depend on image size.

@@ -3,8 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BirdView</title>
+    <title>BirdView - Vision Analysis</title>
     <style>
+        :root {
+            --ink: #232323;
+            --ink-light: #444;
+            --paper: #f7f7f7;
+            --border: #333;
+            --accent: #b0b0b0;
+            --gray: #888;
+            --table-bg: #fff;
+            --focus: #0050a0;
+            --primary: #00794c;
+            --primary-hover: #006240;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,9 +25,13 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #1a1a1a;
-            color: #e0e0e0;
+            font-family: Verdana, Geneva, sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            font-size: 14px;
+            letter-spacing: 0.01em;
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
         }
 
@@ -24,16 +41,18 @@
         }
 
         h1 {
-            margin-bottom: 20px;
-            font-size: 24px;
-            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--ink);
         }
 
         .controls {
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            background: var(--table-bg);
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
         }
 
         .control-group {
@@ -42,41 +61,151 @@
 
         label {
             display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: var(--gray);
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            max-width: 100%;
+            background: #000;
+            border: 1px solid var(--border);
+        }
+
+        #chartCanvas {
+            width: 100%;
+            height: 300px !important;
+            max-height: 300px !important;
+            background: var(--table-bg);
+            border: 1px solid var(--border);
+            margin-top: 16px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .segment-list {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+
+        .segment-item {
+            padding: 8px 10px;
+            background: var(--table-bg);
+            border: 1px solid var(--border);
+            margin-bottom: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .segment-item:hover {
+            background: #e0eaff;
+        }
+
+        .segment-item.active {
+            background: #d0e0ff;
+            border-color: var(--focus);
+        }
+
+        .segment-time {
+            color: var(--focus);
+            font-weight: 600;
+        }
+
+        .video-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: #404040;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #0066cc;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #0066cc;
+            cursor: pointer;
+            border: none;
+        }
+
+        .time-display {
+            font-size: 12px;
             color: #b0b0b0;
+            min-width: 100px;
         }
 
         input[type="file"],
         input[type="text"],
+        input[type="number"],
         select {
             width: 100%;
-            padding: 10px;
-            background: #1a1a1a;
-            border: 1px solid #404040;
-            border-radius: 4px;
-            color: #e0e0e0;
-            font-size: 14px;
+            padding: 6px 8px;
+            background: var(--table-bg);
+            border: 1px solid var(--border);
+            color: var(--ink);
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: 1.5px solid var(--focus);
         }
 
         button {
-            padding: 10px 20px;
-            background: #0066cc;
-            color: white;
-            border: none;
-            border-radius: 4px;
+            padding: 6px 16px;
+            background: var(--primary);
+            color: #000;
+            border: 1px solid var(--primary);
             cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-family: inherit;
+            margin-right: 8px;
+            transition: background 0.15s;
         }
 
         button:hover {
-            background: #0052a3;
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
         }
 
         button:disabled {
-            background: #404040;
+            background: var(--accent);
+            border-color: var(--accent);
             cursor: not-allowed;
+            opacity: 0.6;
         }
 
         .workspace {
@@ -86,23 +215,23 @@
         }
 
         .canvas-container {
-            background: #2a2a2a;
-            border-radius: 8px;
-            padding: 20px;
+            background: var(--table-bg);
+            border: 1px solid var(--border);
+            padding: 16px;
             position: relative;
         }
 
         #canvas {
             max-width: 100%;
             cursor: crosshair;
-            border: 1px solid #404040;
-            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: #fff;
         }
 
         .sidebar {
-            background: #2a2a2a;
-            padding: 20px;
-            border-radius: 8px;
+            background: var(--table-bg);
+            padding: 16px;
+            border: 1px solid var(--border);
             height: fit-content;
         }
 
@@ -175,15 +304,18 @@
         }
 
         .info {
-            font-size: 12px;
-            color: #808080;
+            font-size: 11px;
+            color: var(--gray);
             margin-top: 10px;
+            font-family: inherit;
         }
 
         .loading {
-            color: #0066cc;
-            font-size: 14px;
+            color: var(--focus);
+            font-size: 12px;
             margin-top: 10px;
+            font-family: inherit;
+            font-weight: 600;
         }
 
         .mask-selector {
@@ -259,58 +391,117 @@
 </head>
 <body>
     <div class="container">
+        <h1>BirdView</h1>
+
         <div class="controls">
             <div class="control-group">
-                <input type="file" id="imageUpload" accept="image/*">
+                <label>Upload File</label>
+                <input type="file" id="fileUpload" accept="image/*,video/*">
             </div>
 
-            <div class="control-group">
-                <select id="methodSelect">
-                    <option value="interactive">[SAM3] Interactive</option>
-                    <option value="text">[SAM3] Prompt</option>
-                    <option value="detect">[Yolo] Object Detection</option>
-                    <option value="depth">[DepthAnything] Depth Estimation</option>
-                </select>
+            <div id="imageControls" class="hidden">
+                <div class="control-group">
+                    <label>Method</label>
+                    <select id="methodSelect">
+                        <option value="interactive">[SAM3] Interactive</option>
+                        <option value="text">[SAM3] Prompt</option>
+                        <option value="detect">[Yolo] Object Detection</option>
+                        <option value="depth">[DepthAnything] Depth Estimation</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="textPromptGroup" style="display: none;">
+                    <label>Text Prompt</label>
+                    <input type="text" id="textPrompt" placeholder="e.g., 'groceries'">
+                </div>
+
+                <div>
+                    <button id="runBtn" disabled>Run</button>
+                    <button id="clearBtn">Clear Points</button>
+                </div>
             </div>
 
-            <div class="control-group" id="textPromptGroup" style="display: none;">
-                <label>Text Prompt</label>
-                <input type="text" id="textPrompt" placeholder="e.g., 'groceries'">
-            </div>
+            <div id="videoControls" class="hidden">
+                <div class="control-group">
+                    <label>Detection Method</label>
+                    <select id="videoMethodSelect">
+                        <option value="threshold">Threshold</option>
+                        <option value="derivative">Derivative</option>
+                        <option value="adaptive">Adaptive</option>
+                    </select>
+                </div>
 
-            <div>
-                <button id="runBtn" disabled>Run</button>
-                <button id="clearBtn">Clear Points</button>
+                <div class="control-group">
+                    <label>Similarity Threshold (0.0-1.0)</label>
+                    <input type="number" id="thresholdInput" min="0" max="1" step="0.01" value="0.85">
+                </div>
+
+                <div class="control-group">
+                    <label>Sample Rate (1=every frame)</label>
+                    <input type="number" id="sampleRateInput" min="1" max="10" step="1" value="1">
+                </div>
+
+                <div>
+                    <button id="runSegmentBtn" disabled>Segment Video</button>
+                </div>
             </div>
         </div>
 
         <div class="workspace">
             <div class="canvas-container">
-                <canvas id="canvas"></canvas>
-                <div class="info" id="imageInfo"></div>
+                <canvas id="canvas" class="hidden"></canvas>
+                <video id="videoPlayer" class="hidden" controls></video>
+
+                <div id="videoPlayerControls" class="video-controls hidden">
+                    <button id="playPauseBtn" disabled>Play</button>
+                    <input type="range" id="videoSeekBar" min="0" max="100" value="0" disabled>
+                    <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+                </div>
+
+                <canvas id="chartCanvas" class="hidden"></canvas>
+
+                <div class="info" id="fileInfo"></div>
                 <div class="loading" id="loadingText" style="display: none;"></div>
             </div>
 
             <div class="sidebar">
-                <div class="mode-selector" id="pointMode">
-                    <button class="mode-btn active" data-label="1">Positive (+)</button>
-                    <button class="mode-btn" data-label="0">Negative (-)</button>
+                <div id="imageSidebar" class="hidden">
+                    <div class="mode-selector" id="pointMode">
+                        <button class="mode-btn active" data-label="1">Positive (+)</button>
+                        <button class="mode-btn" data-label="0">Negative (-)</button>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Points</label>
+                        <div class="points-list" id="pointsList"></div>
+                    </div>
+
+                    <div class="results" id="results"></div>
                 </div>
 
-                <div class="control-group">
-                    <label>Points</label>
-                    <div class="points-list" id="pointsList"></div>
+                <div id="videoSidebar" class="hidden">
+                    <h3 style="margin-bottom: 15px; font-size: 16px;">Segments</h3>
+                    <div class="segment-list" id="segmentList"></div>
                 </div>
-
-                <div class="results" id="results"></div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const imageUpload = document.getElementById('imageUpload');
+        const fileUpload = document.getElementById('fileUpload');
+        const videoPlayer = document.getElementById('videoPlayer');
+
+        const imageControls = document.getElementById('imageControls');
+        const videoControls = document.getElementById('videoControls');
+        const imageSidebar = document.getElementById('imageSidebar');
+        const videoSidebar = document.getElementById('videoSidebar');
+        const videoPlayerControls = document.getElementById('videoPlayerControls');
+        const chartCanvas = document.getElementById('chartCanvas');
+
         const methodSelect = document.getElementById('methodSelect');
         const textPromptGroup = document.getElementById('textPromptGroup');
         const textPrompt = document.getElementById('textPrompt');
@@ -318,17 +509,30 @@
         const clearBtn = document.getElementById('clearBtn');
         const pointsList = document.getElementById('pointsList');
         const results = document.getElementById('results');
-        const imageInfo = document.getElementById('imageInfo');
+        const fileInfo = document.getElementById('fileInfo');
         const loadingText = document.getElementById('loadingText');
         const pointMode = document.getElementById('pointMode');
 
+        const runSegmentBtn = document.getElementById('runSegmentBtn');
+        const videoMethodSelect = document.getElementById('videoMethodSelect');
+        const thresholdInput = document.getElementById('thresholdInput');
+        const sampleRateInput = document.getElementById('sampleRateInput');
+        const segmentList = document.getElementById('segmentList');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const videoSeekBar = document.getElementById('videoSeekBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+
+        let currentFileType = null;
         let currentImage = null;
-        let imageId = null;
+        let fileId = null;
         let points = [];
-        let currentLabel = 1; // 1 = positive, 0 = negative
+        let currentLabel = 1;
         let masks = [];
         let maskScores = [];
         let selectedMaskIndex = 0;
+        let segmentData = null;
+        let similarityChart = null;
+        let currentSegmentIndex = -1;
 
         // Mode selector
         pointMode.querySelectorAll('.mode-btn').forEach(btn => {
@@ -351,37 +555,73 @@
             }
         });
 
-        // Image upload
-        imageUpload.addEventListener('change', async (e) => {
+        // File upload - unified handler
+        fileUpload.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            const isVideo = file.type.startsWith('video/');
+            currentFileType = isVideo ? 'video' : 'image';
+
+            canvas.classList.add('hidden');
+            videoPlayer.classList.add('hidden');
+            videoPlayerControls.classList.add('hidden');
+            chartCanvas.classList.add('hidden');
+            imageControls.classList.add('hidden');
+            videoControls.classList.add('hidden');
+            imageSidebar.classList.add('hidden');
+            videoSidebar.classList.add('hidden');
 
             const formData = new FormData();
             formData.append('file', file);
 
             try {
                 loadingText.style.display = 'block';
-                loadingText.textContent = 'Uploading image...';
+                loadingText.textContent = `Uploading ${currentFileType}...`;
 
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                if (isVideo) {
+                    const response = await fetch('/api/upload_video', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    fileId = data.video_id;
 
-                const data = await response.json();
-                imageId = data.image_id;
+                    videoPlayer.src = `/api/video/${fileId}`;
+                    videoPlayer.load();
+                    videoPlayer.classList.remove('hidden');
+                    videoPlayerControls.classList.remove('hidden');
+                    videoControls.classList.remove('hidden');
+                    videoSidebar.classList.remove('hidden');
 
-                // Load image on canvas
-                const img = new Image();
-                img.onload = () => {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    currentImage = img;
-                    runBtn.disabled = false;
-                    imageInfo.textContent = `Image: ${data.filename} (${data.width}x${data.height})`;
-                };
-                img.src = `/api/image/${imageId}`;
+                    runSegmentBtn.disabled = false;
+                    playPauseBtn.disabled = false;
+                    videoSeekBar.disabled = false;
+
+                    fileInfo.textContent = `Video: ${data.filename} (${data.duration.toFixed(2)}s, ${data.frame_count} frames, ${data.fps.toFixed(2)} fps)`;
+                } else {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    fileId = data.image_id;
+
+                    const img = new Image();
+                    img.onload = () => {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        currentImage = img;
+                        runBtn.disabled = false;
+                        fileInfo.textContent = `Image: ${data.filename} (${data.width}x${data.height})`;
+                    };
+                    img.src = `/api/image/${fileId}`;
+
+                    canvas.classList.remove('hidden');
+                    imageControls.classList.remove('hidden');
+                    imageSidebar.classList.remove('hidden');
+                }
 
                 loadingText.style.display = 'none';
             } catch (error) {
@@ -506,7 +746,7 @@
         });
 
         runBtn.addEventListener('click', async () => {
-            if (!imageId) return;
+            if (!fileId) return;
 
             const method = methodSelect.value;
             loadingText.style.display = 'block';
@@ -526,7 +766,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            image_id: imageId,
+                            image_id: fileId,
                             point_coords: points.map(p => [p.x, p.y]),
                             point_labels: points.map(p => p.label)
                         })
@@ -562,7 +802,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            image_id: imageId,
+                            image_id: fileId,
                             text_prompt: prompt
                         })
                     });
@@ -590,7 +830,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            image_id: imageId,
+                            image_id: fileId,
                             enable_segmentation: true
                         })
                     });
@@ -618,7 +858,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            image_id: imageId,
+                            image_id: fileId,
                             return_visualization: true
                         })
                     });
@@ -655,6 +895,238 @@
                 loadingText.textContent = 'Error: ' + error.message;
                 results.innerHTML = `<div style="color: #cc0000;">Error: ${error.message}</div>`;
             }
+        });
+
+        // Video temporal segmentation
+        runSegmentBtn.addEventListener('click', async () => {
+            if (!fileId) return;
+
+            loadingText.style.display = 'block';
+            loadingText.textContent = 'Analyzing video... This may take a few minutes.';
+            segmentList.innerHTML = '<div style="color: #b0b0b0; padding: 10px;">Processing...</div>';
+
+            try {
+                const response = await fetch('/api/temporal_segment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        video_id: fileId,
+                        method: videoMethodSelect.value,
+                        similarity_threshold: parseFloat(thresholdInput.value),
+                        sample_rate: parseInt(sampleRateInput.value),
+                        min_segment_length: 5
+                    })
+                });
+
+                segmentData = await response.json();
+
+                if (segmentData.success) {
+                    chartCanvas.classList.remove('hidden');
+                    displaySegments(segmentData);
+                    drawSimilarityChart(segmentData);
+                    loadingText.textContent = `Found ${segmentData.total_segments} segments with ${segmentData.change_points.length} change points`;
+                    setTimeout(() => { loadingText.style.display = 'none'; }, 3000);
+                } else {
+                    loadingText.textContent = 'Error: ' + segmentData.error;
+                }
+            } catch (error) {
+                console.error('Segmentation error:', error);
+                loadingText.textContent = 'Error: ' + error.message;
+            }
+        });
+
+        function displaySegments(data) {
+            segmentList.innerHTML = data.segments.map((seg, i) => `
+                <div class="segment-item" data-index="${i}" onclick="seekToSegment(${i})">
+                    <div style="font-weight: 600; margin-bottom: 5px;">Segment ${i + 1}</div>
+                    <div class="segment-time">${formatTime(seg.start_time)} - ${formatTime(seg.end_time)}</div>
+                    <div style="color: #808080;">Duration: ${seg.duration.toFixed(2)}s</div>
+                </div>
+            `).join('');
+        }
+
+        function seekToSegment(index) {
+            if (!segmentData) return;
+
+            const segment = segmentData.segments[index];
+            videoPlayer.currentTime = segment.start_time + 0.001;
+            currentSegmentIndex = index;
+
+            document.querySelectorAll('.segment-item').forEach((el, i) => {
+                el.classList.toggle('active', i === index);
+            });
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function drawSimilarityChart(data) {
+            const ctx = chartCanvas.getContext('2d');
+
+            if (similarityChart) {
+                similarityChart.destroy();
+            }
+
+            const frames = data.similarities.map((_, i) => i * data.sample_rate);
+            const changePoints = data.change_points;
+
+            const pastelColors = [
+                'rgba(173, 216, 230, 0.3)',
+                'rgba(255, 182, 193, 0.3)',
+                'rgba(221, 160, 221, 0.3)',
+                'rgba(144, 238, 144, 0.3)',
+                'rgba(255, 218, 185, 0.3)',
+                'rgba(176, 224, 230, 0.3)',
+                'rgba(255, 255, 224, 0.3)',
+                'rgba(230, 230, 250, 0.3)',
+                'rgba(255, 228, 181, 0.3)',
+                'rgba(216, 191, 216, 0.3)'
+            ];
+
+            const annotations = {};
+
+            changePoints.forEach((cp, i) => {
+                annotations[`vline${i}`] = {
+                    type: 'line',
+                    xMin: cp / data.sample_rate,
+                    xMax: cp / data.sample_rate,
+                    borderColor: 'rgba(220, 20, 20, 0.6)',
+                    borderWidth: 2,
+                    borderDash: [6, 4]
+                };
+            });
+
+            data.segments.forEach((seg, i) => {
+                const startIdx = seg.start_frame / data.sample_rate;
+                const endIdx = seg.end_frame / data.sample_rate;
+                annotations[`box${i}`] = {
+                    type: 'box',
+                    xMin: startIdx,
+                    xMax: endIdx,
+                    backgroundColor: pastelColors[i % pastelColors.length],
+                    borderWidth: 0
+                };
+            });
+
+            similarityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: frames,
+                    datasets: [{
+                        label: 'Similarity',
+                        data: data.similarities,
+                        borderColor: 'rgba(0, 102, 204, 0.7)',
+                        backgroundColor: 'rgba(0, 102, 204, 0.05)',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 3,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#232323',
+                            bodyColor: '#232323',
+                            borderColor: '#333',
+                            borderWidth: 1,
+                            padding: 8,
+                            callbacks: {
+                                title: (items) => `Frame ${items[0].label}`,
+                                label: (item) => `Similarity: ${item.parsed.y.toFixed(3)}`
+                            }
+                        },
+                        annotation: {
+                            annotations: annotations
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Frame Number',
+                                color: '#232323',
+                                font: { size: 11, weight: 600, family: 'Verdana' }
+                            },
+                            ticks: { color: '#444', font: { size: 10 } },
+                            grid: { color: 'rgba(0, 0, 0, 0.08)' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Cosine Similarity',
+                                color: '#232323',
+                                font: { size: 11, weight: 600, family: 'Verdana' }
+                            },
+                            min: Math.min(...data.similarities) - 0.01,
+                            max: 1.0,
+                            ticks: { color: '#444', font: { size: 10 } },
+                            grid: { color: 'rgba(0, 0, 0, 0.08)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Video controls
+        playPauseBtn.addEventListener('click', () => {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                playPauseBtn.textContent = 'Pause';
+            } else {
+                videoPlayer.pause();
+                playPauseBtn.textContent = 'Play';
+            }
+        });
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (!videoPlayer.duration) return;
+
+            const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+            videoSeekBar.value = percent;
+            timeDisplay.textContent = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
+
+            if (segmentData) {
+                const currentSeg = segmentData.segments.findIndex((seg, idx) => {
+                    const isLastSegment = idx === segmentData.segments.length - 1;
+                    return videoPlayer.currentTime >= seg.start_time &&
+                           (isLastSegment ? videoPlayer.currentTime <= seg.end_time : videoPlayer.currentTime < seg.end_time);
+                });
+                if (currentSeg !== currentSegmentIndex && currentSeg !== -1) {
+                    currentSegmentIndex = currentSeg;
+                    document.querySelectorAll('.segment-item').forEach((el, i) => {
+                        el.classList.toggle('active', i === currentSeg);
+                    });
+                }
+            }
+        });
+
+        videoPlayer.addEventListener('play', () => {
+            playPauseBtn.textContent = 'Pause';
+        });
+
+        videoPlayer.addEventListener('pause', () => {
+            playPauseBtn.textContent = 'Play';
+        });
+
+        videoSeekBar.addEventListener('input', (e) => {
+            if (!videoPlayer.duration) return;
+            const time = (e.target.value / 100) * videoPlayer.duration;
+            videoPlayer.currentTime = time;
         });
     </script>
 </body>

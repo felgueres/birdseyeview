@@ -13,7 +13,11 @@ class VisionConfig:
                 depth_model_size='small',
                 enable_bg_removal=False,
                 bg_removal_mode='mask',
-                bg_depth_threshold=0.6):
+                bg_depth_threshold=0.6,
+                enable_temporal_segmentation=False,
+                temporal_clip_model='openai/clip-vit-base-patch32',
+                temporal_similarity_threshold=0.85,
+                temporal_min_segment_length=5):
 
         self.enable_box = enable_box
         self.enable_mask = enable_mask
@@ -29,7 +33,11 @@ class VisionConfig:
         self.depth_alpha = 0.4  # Blending factor for depth overlay
         self.enable_bg_removal = enable_bg_removal
         self.bg_removal_mode = bg_removal_mode  # 'mask', 'depth', 'combined', or 'blur'
-        self.bg_depth_threshold = bg_depth_threshold  # For depth-based removal
+        self.bg_depth_threshold = bg_depth_threshold
+        self.enable_temporal_segmentation = enable_temporal_segmentation
+        self.temporal_clip_model = temporal_clip_model
+        self.temporal_similarity_threshold = temporal_similarity_threshold
+        self.temporal_min_segment_length = temporal_min_segment_length
         
         # If segmentation is enabled, automatically enable mask drawing
         if enable_segmentation:

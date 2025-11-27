@@ -20,7 +20,7 @@ Some cool end goals could be:
 | Tracking | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X |
 | Scene understanding | Build structured understanding of world (objects,layout,relations). Produces a scene graph. | X |
 | Depth estimation | Predict distance on every pixel from the camera. Per-pixel depth map. | X |
-| Temporal segmentation | Split by activity phases. Timeline segments. | |
+| Temporal segmentation | Split by activity phases. Timeline segments. | X |
 | Event detection | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events. | |
 | Action recognition | What's happening in video. Action labels + time segments. | |
 | Anomaly detection | Detect unusual behavior, appearance or events. Anomaly score. | |
@@ -93,6 +93,10 @@ python3 server/app.py
 ```
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="/docs/interactive_ui.png">
-  <img alt="tiny corp logo" src="/docs/interactive_ui.png" width="50%" height="50%">
+  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="300px"">
 </picture>
+
+<picture>
+  <img alt="t seg" src="/docs/t_seg.png" width="300px">
+</picture>
+

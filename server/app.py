@@ -10,6 +10,7 @@ import cv2
 
 from bird.vision.detector import ObjectDetector
 from bird.vision.depth_estimator import DepthEstimator
+from bird.vision.temporal_segmenter import TemporalSegmenter
 from bird.config import VisionConfig
 import modal
 
@@ -28,11 +29,26 @@ vision_config = VisionConfig(
 )
 detector = ObjectDetector(vision_config=vision_config)
 depth_estimator = DepthEstimator(model_size='small')
+temporal_segmenter = None
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+VIDEO_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'webm'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_video(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in VIDEO_EXTENSIONS
+
+def get_temporal_segmenter():
+    global temporal_segmenter
+    if temporal_segmenter is None:
+        temporal_segmenter = TemporalSegmenter(
+            model_name="openai/clip-vit-base-patch32",
+            similarity_threshold=0.85,
+            min_segment_length=5
+        )
+    return temporal_segmenter
 
 def get_image_path(image_id):
     """Get full path for an image ID"""
@@ -250,6 +266,107 @@ def estimate_depth():
         result['visualization'] = base64.b64encode(buffer).decode('utf-8')
 
     return jsonify(result)
+
+@app.route('/api/upload_video', methods=['POST'])
+def upload_video():
+    """Upload a video file and return a video_id"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file and allowed_video(file.filename):
+        video_id = str(uuid.uuid4())
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"{video_id}.{ext}"
+        filepath = UPLOAD_FOLDER / filename
+        file.save(filepath)
+
+        cap = cv2.VideoCapture(str(filepath))
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        duration = frame_count / fps if fps > 0 else 0
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+
+        return jsonify({
+            'video_id': video_id,
+            'filename': file.filename,
+            'frame_count': frame_count,
+            'fps': fps,
+            'duration': duration,
+            'width': width,
+            'height': height
+        })
+    return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/api/temporal_segment', methods=['POST'])
+def temporal_segment():
+    """
+    Perform temporal segmentation on a video
+    Body: {
+        video_id: str,
+        method: str (optional, default='threshold'),
+        similarity_threshold: float (optional, default=0.85),
+        sample_rate: int (optional, default=1),
+        min_segment_length: int (optional, default=5)
+    }
+    """
+    data = request.json
+    video_id = data.get('video_id')
+    method = data.get('method', 'threshold')
+    similarity_threshold = data.get('similarity_threshold', 0.85)
+    sample_rate = data.get('sample_rate', 1)
+    min_segment_length = data.get('min_segment_length', 5)
+
+    video_path = None
+    for ext in VIDEO_EXTENSIONS:
+        path = UPLOAD_FOLDER / f"{video_id}.{ext}"
+        if path.exists():
+            video_path = path
+            break
+
+    if video_path is None:
+        return jsonify({'error': 'Video not found'}), 404
+
+    try:
+        segmenter = get_temporal_segmenter()
+        segmenter.similarity_threshold = similarity_threshold
+        segmenter.min_segment_length = min_segment_length
+
+        result = segmenter.segment_video(
+            video_path=str(video_path),
+            method=method,
+            batch_size=32,
+            sample_rate=sample_rate
+        )
+
+        return jsonify({
+            'success': True,
+            'video_id': video_id,
+            **result
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Temporal segmentation failed: {str(e)}'}), 500
+
+@app.route('/api/video/<video_id>')
+def get_video(video_id):
+    """Retrieve an uploaded video"""
+    video_path = None
+    for ext in VIDEO_EXTENSIONS:
+        path = UPLOAD_FOLDER / f"{video_id}.{ext}"
+        if path.exists():
+            video_path = path
+            break
+
+    if video_path is None:
+        return jsonify({'error': 'Video not found'}), 404
+
+    return send_file(video_path, mimetype=f'video/{video_path.suffix[1:]}')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
