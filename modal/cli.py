@@ -19,6 +19,7 @@ image = (
     Image.debian_slim(python_version="3.11")
     .apt_install("git")
     .run_commands([
+        f"pip install python-dotenv",
         "pip install huggingface-hub",
         f"hf auth login --token {HF_TOKEN}",
         "pip install torch==2.9.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126",

@@ -23,6 +23,7 @@ setup(
         "modal>=1.2.4",
         "flask>=3.0.0",
         "torch>=2.0.0",
-        "transformers>=4.30.0"
+        "transformers>=4.30.0",
+        "python-dotenv>=1.2.1"
     ] 
 )
