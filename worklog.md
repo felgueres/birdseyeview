@@ -1,3 +1,7 @@
+11/28/2025
+the input is an rgb MxNx3 frame and the output is often a MxNx1 binary mask  
+the repo most be built in a composable way such that you can apply a sequence of transforms on the frames. I think building that from first principles is important, will spend next few days learning 
+
 11/26/2025
 Temporal segmentation is done with calculating the distance between frames. 
 You can either compute features classically or use an embedding model.

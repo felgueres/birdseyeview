@@ -176,6 +176,9 @@ class DepthEstimator:
         """Get overall statistics for the depth map"""
         return {
             'mean_depth': float(np.mean(depth_map)),
+            'median_depth': float(np.median(depth_map)),
+            'min_depth': float(np.min(depth_map)),
+            'max_depth': float(np.max(depth_map)),
             'std_depth': float(np.std(depth_map)),
             'near_percentage': float(np.sum(depth_map > 0.7) / depth_map.size * 100),
             'far_percentage': float(np.sum(depth_map < 0.3) / depth_map.size * 100),
