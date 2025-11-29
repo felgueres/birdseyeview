@@ -1,6 +1,15 @@
+11/29/2025
+the difficutly of video is not to run the models, that's easy, it's to do reasonably well under deployment constraints which requires orchestration and a hierarchy of compute to selectively apply. 
+video is also interesting because it's the og streaming problem but unlike llm tokens, every frame goes through heavy processing instead of being a pass through.
+thinking for a second about llms, it might be that we'll see the streaming libraries coming to llm world if there's value in post processing every token which with the introduction of tools we might see. 
+
 11/28/2025
 the input is an rgb MxNx3 frame and the output is often a MxNx1 binary mask  
-the repo most be built in a composable way such that you can apply a sequence of transforms on the frames. I think building that from first principles is important, will spend next few days learning 
+the repo most be built in a composable way such that you can apply a sequence of transforms on the frames. I think building that from first principles is important, will spend next few days learning. 
+consider for running models on the browser: https://onnxruntime.ai/
+
+feels like im building towards a video processor more than a video generator. 
+frame understanding. looking around, capcut is wild, it's basically slop on steroids for video. frivolous beyond belief. energy and ai are the most important industries in my lifetime. to what capacity does video understanding helps: distribution (interconnection, transmission), manufacturing backlog, slow regulatory environment
 
 11/26/2025
 Temporal segmentation is done with calculating the distance between frames. 
