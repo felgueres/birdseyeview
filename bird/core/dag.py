@@ -1,12 +1,29 @@
 from functools import reduce
 import graphviz
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Transform:
-    def __init__(self, name: str, input_keys: list[str], output_keys: list[str]):
+    def __init__(
+        self,
+        name: str,
+        input_keys: list[str],
+        output_keys: list[str],
+        run_every_n_frames: int = 1,
+        critical: bool = True
+    ):
         self.name = name or ""
         self.input_keys = input_keys or []
         self.output_keys = output_keys or []
+        self.run_every_n_frames = run_every_n_frames
+        self.critical = critical
+
+    def should_run(self, state: dict) -> bool:
+        frame_count = state.get('frame_count', 0)
+        return frame_count % self.run_every_n_frames == 0
+
     def forward(self, inputs: dict) -> dict:
         raise NotImplementedError
 
@@ -77,23 +94,28 @@ class DAG:
     def forward(self, inputs):
         state = dict(inputs)
         for t in self.execution_order:
-            in_dict = {k: state[k] for k in t.input_keys}
-            out = t.forward(in_dict)
-            state.update(out)
+            if t.should_run(state):
+                in_dict = {k: state.get(k) for k in t.input_keys if k in state}
+                try:
+                    out = t.forward(in_dict)
+                    state.update(out)
+                except Exception as e:
+                    if t.critical:
+                        raise
+                    else:
+                        logger.warning(f"Transform {t.name} failed: {e}, skipping")
         return state
 
 
-inputs = {"a": 2, "b": 3, "c": 4}
-dag = DAG(
-    [
-        SumTransform(input_keys=["a", "b", "c"], output_keys=["d"]),
-        MulTransform(input_keys=["a", "d"], output_keys=["e"]),
-        SumTransform(input_keys=["e", "d"], output_keys=["f"]),
-    ]
-)
-
-dag._topo()
-
-# dag.vis()
-# out = dag.forward(inputs=inputs)
-# print(out)
+if __name__ == "__main__":
+    inputs = {"a": 2, "b": 3, "c": 4}
+    dag = DAG(
+        [
+            SumTransform(input_keys=["a", "b", "c"], output_keys=["d"]),
+            MulTransform(input_keys=["a", "d"], output_keys=["e"]),
+            SumTransform(input_keys=["e", "d"], output_keys=["f"]),
+        ]
+    )
+    dag._topo()
+    out = dag.forward(inputs=inputs)
+    dag.vis()

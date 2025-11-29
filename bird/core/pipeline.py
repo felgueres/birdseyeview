@@ -6,19 +6,30 @@ from bird.vision.scene_graph import SceneGraphBuilder
 from bird.vision.overlay import InfoOverlay
 from bird.vision.depth_estimator import DepthEstimator
 from bird.vision.background_remover import BackgroundRemover
-import json
+from bird.core.dag import DAG
+from bird.core.transforms import (
+    DepthEstimationTransform,
+    ObjectDetectionTransform,
+    ObjectTrackingTransform,
+    DrawDetectionsTransform,
+    BackgroundRemovalTransform,
+    DepthVisualizationTransform,
+    SceneGraphTransform,
+    OpticalFlowTransform,
+    MetricsTransform,
+    OverlayTransform,
+)
 import cv2
 import time
-import numpy as np
 
 
 def run(camera, vision_config: VisionConfig):
     """
-    Vision pipeline that processes camera frames.
-    
+    Vision pipeline that processes camera frames using DAG-based transforms.
+
     Orchestrates object detection, tracking, optical flow, and scene graph
     generation based on the provided configuration.
-    
+
     Args:
         camera: Camera instance (Webcam or SonyA5000) that provides stream_frames()
         vision_config: VisionConfig instance with pipeline settings
@@ -43,135 +54,78 @@ def run(camera, vision_config: VisionConfig):
         mode=vision_config.bg_removal_mode,
         depth_threshold=vision_config.bg_depth_threshold
     ) if vision_config.enable_bg_removal else None
-    
-    # Initialize info overlay
+
     overlay = InfoOverlay(position='right', width=250, alpha=0.7)
+
+    transforms = []
+
+    if depth_estimator:
+        transforms.append(DepthEstimationTransform(
+            depth_estimator=depth_estimator,
+            run_every_n_frames=3
+        ))
+
+    if detector:
+        detector.depth_estimator = depth_estimator
+        transforms.append(ObjectDetectionTransform(detector=detector))
+
+        if object_tracker:
+            transforms.append(ObjectTrackingTransform(
+                tracker=object_tracker,
+                detector=detector
+            ))
+        else:
+            transforms.append(DrawDetectionsTransform(detector=detector))
+
+    if bg_remover:
+        transforms.append(BackgroundRemovalTransform(bg_remover=bg_remover))
+    elif depth_estimator:
+        transforms.append(DepthVisualizationTransform(
+            depth_estimator=depth_estimator,
+            alpha=vision_config.depth_alpha
+        ))
+
+    if scene_graph_builder:
+        transforms.append(SceneGraphTransform(
+            scene_graph_builder=scene_graph_builder,
+            run_every_n_frames=vision_config.scene_graph_vlm_interval
+        ))
+
+    if flow_tracker:
+        transforms.append(OpticalFlowTransform(flow_tracker=flow_tracker))
+
+    transforms.append(MetricsTransform(
+        detector=detector,
+        tracker=object_tracker,
+        depth_estimator=depth_estimator
+    ))
+
+    if vision_config.enable_overlay:
+        transforms.append(OverlayTransform(overlay=overlay))
+
+    dag = DAG(transforms)
+
     frame_count = 0
-    fps = 0
-    fps_start_time = time.time()
-    fps_frame_count = 0
 
     for frame in camera.stream_frames():
         frame_start_time = time.time()
-        events = []
-        
-        # 1. Depth Estimation (if enabled, run early for object depth info)
-        depth_map = None
-        if depth_estimator:
-            depth_map = depth_estimator.estimate_depth(frame)
-        
-        # 2. Object Detection - detect objects
-        detections = []
-        tracked_objects = []
-        if detector:
-            detections = detector.detect_objects(frame)
-            
-            # Add depth info to detections
-            if depth_map is not None:
-                for det in detections:
-                    depth_info = depth_estimator.get_depth_for_bbox(depth_map, det['bbox'])
-                    det['depth'] = depth_info['mean']
-                    det['depth_stats'] = depth_info
-            
-            # Tracks object movement
-            if object_tracker:
-                tracked_objects = object_tracker.update(detections)
-                frame = detector.draw_tracks(frame, tracked_objects)
-                
-                # Track new objects
-                for obj in tracked_objects:
-                    if len(obj['trajectory']) == 1:  # New track
-                        events.append(f"New {obj['class']}")
-            # Otherwise, just draws boxes
-            else:
-                frame = detector.draw_detections(frame, detections)
-        
-        # 3. Background Removal (if enabled, do before depth viz)
-        if bg_remover:
-            if bg_remover.mode == 'mask' and (detections or tracked_objects):
-                objects = tracked_objects if tracked_objects else detections
-                frame = bg_remover.remove_with_masks(frame, objects)
-            elif bg_remover.mode == 'depth' and depth_map is not None:
-                frame = bg_remover.remove_with_depth(frame, depth_map)
-            elif bg_remover.mode == 'combined' and depth_map is not None and (detections or tracked_objects):
-                objects = tracked_objects if tracked_objects else detections
-                frame = bg_remover.remove_combined(frame, objects, depth_map)
-            elif bg_remover.mode == 'blur' and (detections or tracked_objects):
-                objects = tracked_objects if tracked_objects else detections
-                # Create foreground mask
-                h, w = frame.shape[:2]
-                mask = np.zeros((h, w), dtype=np.uint8)
-                for obj in objects:
-                    if 'mask' in obj:
-                        obj_mask = obj['mask']
-                        if obj_mask.shape != (h, w):
-                            obj_mask = cv2.resize(obj_mask, (w, h))
-                        mask = np.maximum(mask, (obj_mask > 0.5).astype(np.uint8))
-                frame = bg_remover.blur_background(frame, mask, blur_amount=25)
-        
-        # 4. Depth Visualization (blend with frame if enabled)
-        if depth_map is not None and not bg_remover:  # Skip if bg removal used depth
-            frame = depth_estimator.create_depth_overlay(frame, depth_map, alpha=vision_config.depth_alpha)
-        
-        # 5. Scene Graph - VLM analysis and draw (overrides visualizations on VLM frames)
-        if scene_graph_builder:
-            scene_graph = scene_graph_builder.build_graph(frame)
-            if scene_graph:
-                events.append("VLM update")
-        
-        # 6. Optical Flow - compute and draw
-        motion_energy = 0
-        tracked_points = 0
-        if flow_tracker:
-            if vision_config.optical_flow_method == 'lucas_kanade':
-                old_pts, new_pts = flow_tracker.compute_sparse_flow(frame)
-                if old_pts is not None and new_pts is not None:
-                    frame = flow_tracker.draw_sparse_flow(frame, old_pts, new_pts)
-                    
-                    stats = flow_tracker.get_flow_statistics(old_points=old_pts, new_points=new_pts)
-                    motion_energy = stats['motion_energy']
-                    tracked_points = stats['num_tracked_points']
-        
-        # Calculate FPS
-        fps_frame_count += 1
-        if time.time() - fps_start_time >= 1.0:
-            fps = fps_frame_count / (time.time() - fps_start_time)
-            fps_frame_count = 0
-            fps_start_time = time.time()
-        
-        # Build metrics dictionary - keep it simple
-        metrics = {
-            'FPS': fps,
-            'Frame': frame_count,
+
+        state = {
+            'frame': frame,
+            'frame_count': frame_count,
+            'events': [],
         }
-        
-        if detector:
-            if object_tracker:
-                metrics['Tracked'] = object_tracker.get_active_track_count()
-            else:
-                metrics['Detections'] = len(detections)
-        
-        if flow_tracker and tracked_points > 0:
-            metrics['Motion'] = motion_energy
-        
-        if depth_map is not None:
-            depth_stats = depth_estimator.get_depth_statistics(depth_map)
-            metrics['Avg Depth'] = depth_stats['mean_depth']
-        
-        # Pipeline timing
+
+        state = dag.forward(state)
+
         frame_time = (time.time() - frame_start_time) * 1000
-        metrics['ms/frame'] = frame_time
-        
-        # Draw overlay with metrics and events
-        if vision_config.enable_overlay:
-            frame = overlay.draw(frame, metrics, events)
-        
-        # Display and control
-        cv2.imshow('BirdView Camera Feed', frame)
+        state['frame_time'] = frame_time
+
+        cv2.imshow('BirdView Camera Feed', state['frame'])
         frame_count += 1
-        
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-    
+
     cv2.destroyAllWindows()
 
