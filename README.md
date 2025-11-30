@@ -1,7 +1,6 @@
 # Vision
 
-This project builds vision tools to experiment with the latest in video
-understanding.
+This project builds tools to experiment with the latest in video understanding.
 
 Some cool end goals could be:
 

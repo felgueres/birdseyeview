@@ -280,11 +280,29 @@ def upload_video():
     if file and allowed_video(file.filename):
         video_id = str(uuid.uuid4())
         ext = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"{video_id}.{ext}"
-        filepath = UPLOAD_FOLDER / filename
-        file.save(filepath)
+        original_filename = f"{video_id}_original.{ext}"
+        original_filepath = UPLOAD_FOLDER / original_filename
+        file.save(original_filepath)
 
-        cap = cv2.VideoCapture(str(filepath))
+        web_compatible_path = UPLOAD_FOLDER / f"{video_id}.mp4"
+
+        import subprocess
+        result = subprocess.run([
+            'ffmpeg', '-i', str(original_filepath),
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-movflags', '+faststart',
+            '-y',
+            str(web_compatible_path)
+        ], capture_output=True, text=True)
+
+        if result.returncode != 0:
+            return jsonify({'error': f'Video transcoding failed: {result.stderr}'}), 500
+
+        cap = cv2.VideoCapture(str(web_compatible_path))
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = cap.get(cv2.CAP_PROP_FPS)
         duration = frame_count / fps if fps > 0 else 0
@@ -366,7 +384,8 @@ def get_video(video_id):
     if video_path is None:
         return jsonify({'error': 'Video not found'}), 404
 
-    return send_file(video_path, mimetype=f'video/{video_path.suffix[1:]}')
+    mimetype = 'video/mp4' if video_path.suffix.lower() == '.mp4' else f'video/{video_path.suffix[1:]}'
+    return send_file(video_path, mimetype=mimetype)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

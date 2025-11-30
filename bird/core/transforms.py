@@ -229,7 +229,7 @@ class MetricsTransform(Transform):
         super().__init__(
             name="metrics",
             input_keys=["frame_count", "detections", "tracked_objects", "motion_energy",
-                       "tracked_points", "depth_map", "frame_time"],
+                       "tracked_points", "depth_map", "frame_time", "frame_similarity", "is_change_point"],
             output_keys=["metrics"],
             run_every_n_frames=1,
             critical=False
@@ -249,6 +249,8 @@ class MetricsTransform(Transform):
         tracked_points = inputs.get("tracked_points", 0)
         depth_map = inputs.get("depth_map")
         frame_time = inputs.get("frame_time", 0)
+        frame_similarity = inputs.get("frame_similarity")
+        is_change_point = inputs.get("is_change_point", False)
 
         self.fps_frame_count += 1
         if time.time() - self.fps_start_time >= 1.0:
@@ -273,6 +275,11 @@ class MetricsTransform(Transform):
         if depth_map is not None and self.depth_estimator:
             depth_stats = self.depth_estimator.get_depth_statistics(depth_map)
             metrics['Avg Depth'] = depth_stats['mean_depth']
+
+        if frame_similarity is not None:
+            metrics['Similarity'] = frame_similarity
+            if is_change_point:
+                metrics['Scene'] = 'CHANGE'
 
         metrics['ms/frame'] = frame_time
 
@@ -350,3 +357,59 @@ class EventSerializationTransform(Transform):
             self.serializer.write_scene_graph(frame_count, timestamp, scene_graph)
 
         return {}
+
+
+class TemporalSegmentationTransform(Transform):
+    def __init__(self, temporal_segmenter, similarity_threshold: float = 0.85, sample_rate: int = 1):
+        super().__init__(
+            name="temporal_segmentation",
+            input_keys=["frame", "frame_count"],
+            output_keys=["frame_embedding", "frame_similarity", "is_change_point"],
+            run_every_n_frames=sample_rate,
+            critical=False
+        )
+        self.temporal_segmenter = temporal_segmenter
+        self.similarity_threshold = similarity_threshold
+        self.sample_rate = sample_rate
+        self.previous_embedding = None
+        self.embeddings_history = []
+        self.similarities_history = []
+
+    def forward(self, inputs: dict) -> dict:
+        frame = inputs["frame"]
+        frame_count = inputs.get("frame_count", 0)
+
+        # Extract embedding for current frame
+        import torch
+        with torch.no_grad():
+            processed_inputs = self.temporal_segmenter.processor(
+                images=[frame],
+                return_tensors="pt",
+                padding=True
+            ).to(self.temporal_segmenter.device)
+
+            embedding = self.temporal_segmenter.model.get_image_features(**processed_inputs)
+            embedding = embedding / embedding.norm(dim=-1, keepdim=True)
+            embedding_np = embedding.cpu().numpy()[0]
+
+        # Compute similarity with previous frame
+        similarity = None
+        is_change_point = False
+
+        if self.previous_embedding is not None:
+            similarity = float(np.dot(self.previous_embedding, embedding_np))
+            self.similarities_history.append(similarity)
+
+            # Detect change point
+            if similarity < self.similarity_threshold:
+                is_change_point = True
+
+        # Update history
+        self.embeddings_history.append(embedding_np)
+        self.previous_embedding = embedding_np
+
+        return {
+            "frame_embedding": embedding_np,
+            "frame_similarity": similarity,
+            "is_change_point": is_change_point
+        }
