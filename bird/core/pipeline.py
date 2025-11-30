@@ -83,10 +83,16 @@ def run(camera, vision_config: VisionConfig):
             transforms.append(DrawDetectionsTransform(detector=detector))
 
     if vision_config.enable_events and object_tracker:
-        from bird.events.motion import VelocityThresholdEvent
+        from bird.events.motion import RegionEntryEvent, RegionExitEvent
+        from bird.events.interaction import PersonObjectInteractionEvent
+
+        # Define region for entry/exit (whole frame by default)
+        frame_region = [(0, 0), (1920, 0), (1920, 1080), (0, 1080)]
 
         event_detectors = [
-            VelocityThresholdEvent(velocity_threshold=10.0, cooldown=2.0),
+            RegionEntryEvent(region=frame_region, cooldown=1.0),
+            RegionExitEvent(region=frame_region, cooldown=1.0),
+            PersonObjectInteractionEvent(distance_threshold=100.0, duration_threshold=1.0, cooldown=2.0),
         ]
 
         transforms.append(EventDetectionTransform(detectors=event_detectors))

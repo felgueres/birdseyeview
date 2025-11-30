@@ -47,7 +47,7 @@ def main():
     parser.add_argument('--enable-event-serialization', action='store_true', default=False,
                         help='Save events to sessions/<timestamp>/events.jsonl')
     parser.add_argument('--record', type=str, default=None,
-                        help='Record video to file (e.g., workout.mp4)')
+                        help='Filepath to record video to e.g. workout.mp4)')
     parser.add_argument('--num-frames', type=int, default=200,
                         help='Number of frames to record (default: 200)')
     parser.add_argument('--fps', type=int, default=30,

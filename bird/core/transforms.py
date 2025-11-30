@@ -316,9 +316,12 @@ class EventDetectionTransform(Transform):
         for detector in self.detectors:
             try:
                 detected_events = detector.detect(inputs)
+                if detected_events:
+                    for event in detected_events:
+                        print(f"[success] {event['type']} - {event}")
                 events.extend(detected_events)
             except Exception as e:
-                pass
+                print(f"[fail] {detector.__class__.__name__} failed: {e}")
 
         return {"events": events}
 

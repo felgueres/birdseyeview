@@ -1,7 +1,7 @@
 # Vision
 
-This project builds vision primitives and a UI to experiment, eval and develop
-ideas.
+This project builds vision tools to experiment with the latest in video
+understanding.
 
 Some cool end goals could be:
 
@@ -30,45 +30,45 @@ Some cool end goals could be:
 birdview/
 ├── bird/
 │   ├── __init__.py
-│   ├── cli.py                  # entry point
+│   ├── cli.py
 │   ├── config.py
 │   ├── core/
 │   │   ├── __init__.py
-│   │   ├── camera.py           # Camera interfaces (webcam, Sony A5000)
-│   │   ├── pipeline.py         # Vision processing pipeline
-│   │   ├── dag.py              # DAG execution for transforms
-│   │   └── transforms.py       # Transform implementations
+│   │   ├── camera.py
+│   │   ├── pipeline.py
+│   │   ├── dag.py
+│   │   └── transforms.py
 │   ├── events/
 │   │   ├── __init__.py
-│   │   ├── base.py             # Base event classes
-│   │   ├── motion.py           # Motion-based event detection
-│   │   ├── interaction.py      # Interaction event detection
-│   │   ├── serializer.py       # Event serialization
-│   │   └── visualizer.py       # Event visualization
+│   │   ├── base.py
+│   │   ├── motion.py
+│   │   ├── interaction.py
+│   │   ├── serializer.py
+│   │   └── visualizer.py
 │   ├── vision/
 │   │   ├── __init__.py
-│   │   ├── detector.py         # Object detection
-│   │   ├── tracker.py          # Object tracking
-│   │   ├── optical_flow.py     # Optical flow estimation
-│   │   ├── depth_estimator.py  # Depth estimation
-│   │   ├── background_remover.py  # Background removal
-│   │   ├── scene_graph.py      # Scene understanding with VLMs
-│   │   ├── temporal_segmenter.py  # Temporal segmentation
-│   │   └── overlay.py          # Info overlay rendering
+│   │   ├── detector.py
+│   │   ├── tracker.py
+│   │   ├── optical_flow.py
+│   │   ├── depth_estimator.py
+│   │   ├── background_remover.py
+│   │   ├── scene_graph.py
+│   │   ├── temporal_segmenter.py
+│   │   └── overlay.py
 │   └── viz/
-│       └── visualize_segments.py  # Visualization tools
+│       └── visualize_segments.py
 ├── server/
-│   ├── app.py                  # Flask server
+│   ├── app.py
 │   └── templates/
-│       └── index.html          # Web interface
+│       └── index.html
 |
 ├── modal/
-│   └── cli.py                  # Remote GPU inference
-├── yolov8n.pt                  # YOLOv8 detection model
-├── yolov8n-seg.pt              # YOLOv8 segmentation model
-├── yolov8n-pose.pt             # YOLOv8 pose estimation model
+│   └── cli.py
+├── yolov8n.pt
+├── yolov8n-seg.pt
+├── yolov8n-pose.pt
 ├── setup.py
-├── connect_alpha5000.sh        # Sony A5000 connection script
+├── connect_alpha5000.sh
 └── README.md
 ```
 
@@ -84,15 +84,7 @@ ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
 ## Usage
 
 ```bash
-python3 -m bird.cli
-python3 -m bird.cli --enable-scene-graph --model llava:13b
-
---camera-index N          # Webcam index (default: 0)
---vlm [ollama|openai]     # defaults ollama
---enable-scene-graph      # VLM scene graph
---enable-tracking
---enable-box
---enable-depth
+python3 -m bird.cli --video-path ./data/entering.mp4 --camera video --enable-events --enable-event-serialization --enable-segmentation --enable-tracking
 
 modal deploy modal/cli.py
 modal app stop birdview
