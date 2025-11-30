@@ -4,3 +4,5 @@
 .env
 sam3
 CLAUDE.md
+sessions/
+data/
