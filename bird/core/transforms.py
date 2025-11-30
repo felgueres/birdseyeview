@@ -9,6 +9,8 @@ from bird.vision.background_remover import BackgroundRemover
 from bird.vision.scene_graph import SceneGraphBuilder
 from bird.vision.optical_flow import OpticalFlowTracker
 from bird.vision.overlay import InfoOverlay
+from bird.events.base import Event
+from bird.events.serializer import EventSerializer
 
 
 class DepthEstimationTransform(Transform):
@@ -296,3 +298,52 @@ class OverlayTransform(Transform):
         frame = self.overlay.draw(frame, metrics, events)
 
         return {"frame": frame}
+
+
+class EventDetectionTransform(Transform):
+    def __init__(self, detectors: list[Event], run_every_n_frames: int = 1):
+        super().__init__(
+            name="event_detection",
+            input_keys=["tracked_objects", "depth_map", "timestamp"],
+            output_keys=["events"],
+            run_every_n_frames=run_every_n_frames,
+            critical=False
+        )
+        self.detectors = detectors
+
+    def forward(self, inputs: dict) -> dict:
+        events = []
+        for detector in self.detectors:
+            try:
+                detected_events = detector.detect(inputs)
+                events.extend(detected_events)
+            except Exception as e:
+                pass
+
+        return {"events": events}
+
+
+class EventSerializationTransform(Transform):
+    def __init__(self, serializer: EventSerializer, run_every_n_frames: int = 1):
+        super().__init__(
+            name="event_serialization",
+            input_keys=["events", "scene_graph", "frame_count", "timestamp"],
+            output_keys=[],
+            run_every_n_frames=run_every_n_frames,
+            critical=False
+        )
+        self.serializer = serializer
+
+    def forward(self, inputs: dict) -> dict:
+        events = inputs.get("events", [])
+        scene_graph = inputs.get("scene_graph")
+        frame_count = inputs.get("frame_count", 0)
+        timestamp = inputs.get("timestamp", 0)
+
+        if events:
+            self.serializer.write_event(frame_count, timestamp, events)
+
+        if scene_graph:
+            self.serializer.write_scene_graph(frame_count, timestamp, scene_graph)
+
+        return {}

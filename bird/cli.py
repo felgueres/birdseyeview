@@ -40,6 +40,10 @@ def main():
                         help='Background removal mode (default: mask)')
     parser.add_argument('--no-overlay', action='store_true', default=False,
                         help='Disable metrics overlay (default: overlay enabled)')
+    parser.add_argument('--enable-events', action='store_true', default=False,
+                        help='Enable event detection (requires tracking)')
+    parser.add_argument('--enable-event-serialization', action='store_true', default=False,
+                        help='Save events to sessions/<timestamp>/events.jsonl')
     parser.add_argument('--record', type=str, default=None,
                         help='Record video to file (e.g., workout.mp4)')
     parser.add_argument('--num-frames', type=int, default=200,
@@ -80,7 +84,7 @@ def main():
 
     else:
         vision_config = VisionConfig(
-            enable_scene_graph=args.enable_scene_graph, 
+            enable_scene_graph=args.enable_scene_graph,
             enable_tracking=args.enable_tracking,
             enable_segmentation=args.enable_segmentation,
             enable_box=args.enable_box or args.enable_segmentation,
@@ -89,6 +93,8 @@ def main():
             depth_model_size=args.depth_model,
             enable_bg_removal=args.remove_bg,
             bg_removal_mode=args.bg_mode,
+            enable_events=args.enable_events,
+            enable_event_serialization=args.enable_event_serialization,
         )
         vision_config.scene_graph_vlm_provider = args.vlm
         vision_config.scene_graph_vlm_model = args.model
@@ -98,6 +104,10 @@ def main():
         if args.enable_scene_graph:
             print(f"VLM: {args.vlm} ({args.model})")
         print(f"Tracking: {args.enable_tracking}")
+        if args.enable_events:
+            print(f"Events: Enabled")
+        if args.enable_event_serialization:
+            print(f"Event Serialization: Enabled → sessions/<timestamp>/")
         print(f"{'='*60}\n")
         run(camera, vision_config=vision_config)
 

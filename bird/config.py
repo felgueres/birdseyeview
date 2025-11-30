@@ -17,7 +17,9 @@ class VisionConfig:
                 enable_temporal_segmentation=False,
                 temporal_clip_model='openai/clip-vit-base-patch32',
                 temporal_similarity_threshold=0.85,
-                temporal_min_segment_length=5):
+                temporal_min_segment_length=5,
+                enable_events=False,
+                enable_event_serialization=False):
 
         self.enable_box = enable_box
         self.enable_mask = enable_mask
@@ -64,3 +66,5 @@ class VisionConfig:
         self.scene_graph_vlm_model = 'llava:7b'  # Model name (ollama: 'llava:7b', openai: 'gpt-4o', 'gpt-4o-mini')
         self.scene_graph_vlm_interval = 5  # Run VLM every N frames
         self.scene_graph_show_spatial = False  # Draw spatial relationships (can be cluttered)
+        self.enable_events = enable_events
+        self.enable_event_serialization = enable_event_serialization

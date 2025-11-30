@@ -31,25 +31,29 @@ class InfoOverlay:
         if len(self.events_log) > self.max_events:
             self.events_log.pop(0)
     
-    def draw(self, frame: np.ndarray, metrics: Dict[str, Any], 
-             events: List[str] = None) -> np.ndarray:
+    def draw(self, frame: np.ndarray, metrics: Dict[str, Any],
+             events: List = None) -> np.ndarray:
         """
         Draw overlay on frame with metrics and events.
-        
+
         Args:
             frame: Input frame
             metrics: Dictionary of metrics to display
-            events: Optional list of recent events
-            
+            events: Optional list of recent events (strings or dicts)
+
         Returns:
             Frame with overlay
         """
         h, w = frame.shape[:2]
         annotated_frame = frame.copy()
-        
+
         if events:
             for event in events:
-                self.add_event(event)
+                if isinstance(event, dict):
+                    event_str = f"{event.get('type', 'event')} [{','.join(map(str, event.get('objects', [])))}]"
+                    self.add_event(event_str)
+                else:
+                    self.add_event(str(event))
         
         if self.position == 'right':
             return self._draw_side_panel(annotated_frame, metrics, 'right')

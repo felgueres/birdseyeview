@@ -18,7 +18,10 @@ from bird.core.transforms import (
     OpticalFlowTransform,
     MetricsTransform,
     OverlayTransform,
+    EventDetectionTransform,
+    EventSerializationTransform,
 )
+from bird.events.serializer import EventSerializer
 import cv2
 import time
 
@@ -57,6 +60,8 @@ def run(camera, vision_config: VisionConfig):
 
     overlay = InfoOverlay(position='right', width=250, alpha=0.7)
 
+    serializer = EventSerializer() if vision_config.enable_event_serialization else None
+
     transforms = []
 
     if depth_estimator:
@@ -76,6 +81,15 @@ def run(camera, vision_config: VisionConfig):
             ))
         else:
             transforms.append(DrawDetectionsTransform(detector=detector))
+
+    if vision_config.enable_events and object_tracker:
+        from bird.events.motion import VelocityThresholdEvent
+
+        event_detectors = [
+            VelocityThresholdEvent(velocity_threshold=10.0, cooldown=2.0),
+        ]
+
+        transforms.append(EventDetectionTransform(detectors=event_detectors))
 
     if bg_remover:
         transforms.append(BackgroundRemovalTransform(bg_remover=bg_remover))
@@ -103,6 +117,9 @@ def run(camera, vision_config: VisionConfig):
     if vision_config.enable_overlay:
         transforms.append(OverlayTransform(overlay=overlay))
 
+    if serializer:
+        transforms.append(EventSerializationTransform(serializer=serializer))
+
     dag = DAG(transforms)
 
     frame_count = 0
@@ -113,6 +130,7 @@ def run(camera, vision_config: VisionConfig):
         state = {
             'frame': frame,
             'frame_count': frame_count,
+            'timestamp': frame_start_time,
             'events': [],
         }
 
