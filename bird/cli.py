@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 
 from bird.config import VisionConfig
-from bird.core.camera import Webcam, SonyA5000
+from bird.core.camera import Webcam, SonyA5000, VideoFileCamera
 from bird.core.pipeline import run
 
 load_dotenv()
@@ -13,10 +13,12 @@ load_dotenv()
 def main():
     """BirdView CLI - Computer Vision Pipeline Runner"""
     parser = argparse.ArgumentParser(description='BirdView - Computer Vision Pipeline')
-    parser.add_argument('--camera', nargs='?', default='webcam', choices=['webcam', 'sony'],
+    parser.add_argument('--camera', nargs='?', default='webcam', choices=['webcam', 'sony', 'video'],
                         help='Camera source (default: webcam)')
     parser.add_argument('--camera-index', type=int, default=0,
                         help='Webcam index (default: 0)')
+    parser.add_argument('--video-path', type=str, default=None,
+                        help='Path to input video when using --camera video')
     parser.add_argument('--vlm', choices=['ollama', 'openai'], default=None,
                         help='VLM provider: ollama (local) or openai (API). Auto-detected from model if not specified.')
     parser.add_argument('--model', default=None,
@@ -61,7 +63,7 @@ def main():
     if args.camera == "sony":
         print("Connecting to Sony A5000 via WiFi...")
         subprocess.Popen(
-            ["./connect_alpha5000.sh", os.getenv("A5000_SSID"), os.getenv("A5000_password")], 
+            ["./connect_alpha5000.sh", os.getenv("A5000_SSID"), os.getenv("A5000_password")],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -69,6 +71,10 @@ def main():
         )
         time.sleep(5)
         camera = SonyA5000()
+    elif args.camera == "video":
+        if not args.video_path:
+            raise SystemExit("--video-path is required when --camera video")
+        camera = VideoFileCamera(args.video_path)
     else:
         camera = Webcam(camera_index=args.camera_index)
     

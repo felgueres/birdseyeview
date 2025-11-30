@@ -5,8 +5,6 @@ ideas.
 
 Some cool end goals could be:
 
-- Eagle view fusing several cameras
-- A natural language video editor
 - Search and retrieval on video
 - A video agent that does all of the above
 

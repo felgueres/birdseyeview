@@ -238,3 +238,38 @@ class SonyA5000:
             if writer:
                 writer.release()
             cv2.destroyAllWindows()
+
+class VideoFileCamera:
+    """Video file interface compatible with Webcam/SonyA5000."""
+    def __init__(self, path: str):
+        self.path = path
+        self.cap = None
+
+    def stream_frames(self, max_frames=None):
+        self.cap = cv2.VideoCapture(self.path)
+        if not self.cap.isOpened():
+            raise Exception(f"Failed to open video file {self.path}")
+
+        fps = self.cap.get(cv2.CAP_PROP_FPS)
+        width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        print(f"✓ Video opened: {self.path} ({width}x{height} @ {fps}fps)")
+
+        frame_count = 0
+        try:
+            while True:
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+
+                yield frame
+                frame_count += 1
+
+                if max_frames and frame_count >= max_frames:
+                    break
+        finally:
+            if self.cap:
+                self.cap.release()
+
+    def record_video(self, *args, **kwargs):
+        raise NotImplementedError("Recording not supported for VideoFileCamera")
