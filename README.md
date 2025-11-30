@@ -14,21 +14,19 @@ Some cool end goals could be:
   <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px""> 
 </picture>
 
-| Tasks                        | Description                                                                                       | Implemented |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- | ----------- |
-| Detection                    | What's in an image. Bounding box by frame.                                                        | X           |
-| Classification               | Label or top-k labels.                                                                            | X           |
-| Segmentation                 | Mask every pixel per class found.                                                                 | X           |
-| Pose segmentation            | Detect body joints like elbows, knees and provide coordinates.                                    | X           |
-| Optical flow                 | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field.    | X           |
-| Tracking                     | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X           |
-| Scene understanding          | Build structured understanding of world (objects,layout,relations). Produces a scene graph.       | X           |
-| Depth estimation             | Predict distance on every pixel from the camera. Per-pixel depth map.                             | X           |
-| Temporal segmentation        | Split by activity phases. Timeline segments.                                                      | X           |
-| Event detection              | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events.                   |             |
-| Action recognition           | What's happening in video. Action labels + time segments.                                         |             |
-| Object tracking + prediction | Track + forecast future positions. Trajectory with predicted path.                                |             |
-| Re-identificatino (ReID)     | Recognize a previously seen object or in another camera. Produces embedding vector + id match.    |             |
+| Tasks                 | Description                                                                                       | Implemented |
+| --------------------- | ------------------------------------------------------------------------------------------------- | ----------- |
+| Detection             | What's in an image. Bounding box by frame.                                                        | X           |
+| Classification        | Label or top-k labels.                                                                            | X           |
+| Segmentation          | Mask every pixel per class found.                                                                 | X           |
+| Pose segmentation     | Detect body joints like elbows, knees and provide coordinates.                                    | X           |
+| Optical flow          | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field.    | X           |
+| Tracking              | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X           |
+| Scene understanding   | Build structured understanding of world (objects,layout,relations). Produces a scene graph.       | X           |
+| Depth estimation      | Predict distance on every pixel from the camera. Per-pixel depth map.                             | X           |
+| Temporal segmentation | Split by activity phases. Timeline segments.                                                      | X           |
+| Event detection       | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events.                   | X           |
+| Track and predict     | Track + forecast future positions. Trajectory with predicted path.                                | ?           |
 
 ```
 birdview/
@@ -39,14 +37,26 @@ birdview/
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── camera.py           # Camera interfaces (webcam, Sony A5000)
-│   │   ├── pipeline.py         # Vision processing
-│   │   └── dag.py              # DAG execution for transforms
+│   │   ├── pipeline.py         # Vision processing pipeline
+│   │   ├── dag.py              # DAG execution for transforms
+│   │   └── transforms.py       # Transform implementations
+│   ├── events/
+│   │   ├── __init__.py
+│   │   ├── base.py             # Base event classes
+│   │   ├── motion.py           # Motion-based event detection
+│   │   ├── interaction.py      # Interaction event detection
+│   │   ├── serializer.py       # Event serialization
+│   │   └── visualizer.py       # Event visualization
 │   ├── vision/
 │   │   ├── __init__.py
 │   │   ├── detector.py         # Object detection
+│   │   ├── tracker.py          # Object tracking
 │   │   ├── optical_flow.py     # Optical flow estimation
+│   │   ├── depth_estimator.py  # Depth estimation
+│   │   ├── background_remover.py  # Background removal
 │   │   ├── scene_graph.py      # Scene understanding with VLMs
-│   │   └── tracker.py          # Object tracking
+│   │   ├── temporal_segmenter.py  # Temporal segmentation
+│   │   └── overlay.py          # Info overlay rendering
 │   └── viz/
 │       └── visualize_segments.py  # Visualization tools
 ├── server/
