@@ -56,6 +56,8 @@ def main():
                         help='Number of frames to record (default: 200)')
     parser.add_argument('--fps', type=int, default=30,
                         help='FPS for recorded video (default: 30)')
+    parser.add_argument('--enable-vlm-events', action='store_true', default=False,
+                        help='Enable VLM-based event detection')
     
     args = parser.parse_args()
     if args.model and not args.vlm:
@@ -106,6 +108,7 @@ def main():
             enable_events=args.enable_events,
             enable_event_serialization=args.enable_event_serialization,
             enable_temporal_segmentation=args.enable_temporal_segmentation,
+            enable_vlm_events=args.enable_vlm_events,
         )
         vision_config.scene_graph_vlm_provider = args.vlm
         vision_config.scene_graph_vlm_model = args.model

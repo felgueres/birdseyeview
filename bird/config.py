@@ -1,11 +1,11 @@
 class VisionConfig:
-    def __init__(self, 
-                enable_box=False, 
-                enable_mask=False, 
-                enable_pose=False, 
-                enable_optical_flow=False, 
-                enable_classifier=False, 
-                enable_tracking=False, 
+    def __init__(self,
+                enable_box=False,
+                enable_mask=False,
+                enable_pose=False,
+                enable_optical_flow=False,
+                enable_classifier=False,
+                enable_tracking=False,
                 enable_segmentation=False,
                 enable_scene_graph=False,
                 enable_overlay=True,
@@ -16,10 +16,15 @@ class VisionConfig:
                 bg_depth_threshold=0.6,
                 enable_temporal_segmentation=False,
                 temporal_clip_model='openai/clip-vit-base-patch32',
-                temporal_similarity_threshold=0.85,
+                temporal_similarity_threshold=0.95,
                 temporal_min_segment_length=5,
                 enable_events=False,
-                enable_event_serialization=False):
+                enable_event_serialization=False,
+                enable_vlm_events=False,
+                vlm_events_provider='openai',
+                vlm_events_model='gpt-4o-mini',
+                vlm_events_clip_duration=10,
+                vlm_events_cooldown=5.0):
 
         self.enable_box = enable_box
         self.enable_mask = enable_mask
@@ -68,3 +73,8 @@ class VisionConfig:
         self.scene_graph_show_spatial = False  # Draw spatial relationships (can be cluttered)
         self.enable_events = enable_events
         self.enable_event_serialization = enable_event_serialization
+        self.enable_vlm_events = enable_vlm_events
+        self.vlm_events_provider = vlm_events_provider
+        self.vlm_events_model = vlm_events_model
+        self.vlm_events_clip_duration = vlm_events_clip_duration
+        self.vlm_events_cooldown = vlm_events_cooldown

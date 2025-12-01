@@ -45,8 +45,8 @@ def get_temporal_segmenter():
     if temporal_segmenter is None:
         temporal_segmenter = TemporalSegmenter(
             model_name="openai/clip-vit-base-patch32",
-            similarity_threshold=0.85,
-            min_segment_length=5
+            similarity_threshold=0.9,
+            min_segment_length=3
         )
     return temporal_segmenter
 

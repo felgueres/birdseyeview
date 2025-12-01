@@ -10,7 +10,7 @@ class TemporalSegmenter:
         self,
         model_name: str = "openai/clip-vit-base-patch32",
         device: Optional[str] = None,
-        similarity_threshold: float = 0.85,
+        similarity_threshold: float = 0.99,
         min_segment_length: int = 5
     ):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")

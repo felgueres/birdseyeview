@@ -21,6 +21,7 @@ from bird.core.transforms import (
     EventDetectionTransform,
     EventSerializationTransform,
     TemporalSegmentationTransform,
+    VLMSegmentEventTransform,
 )
 from bird.events.serializer import EventSerializer
 import cv2
@@ -160,19 +161,24 @@ def build_dag_from_config(vision_config: VisionConfig):
             sample_rate=1
         ))
 
-    # Metrics
+    if vision_config.enable_vlm_events and vision_config.enable_temporal_segmentation:
+        transforms.append(VLMSegmentEventTransform(
+            vlm_provider=vision_config.vlm_events_provider,
+            vlm_model=vision_config.vlm_events_model,
+            clip_duration_frames=vision_config.vlm_events_clip_duration,
+            cooldown=vision_config.vlm_events_cooldown
+        ))
+
     transforms.append(MetricsTransform(
         detector=detector,
         tracker=object_tracker,
         depth_estimator=depth_estimator
     ))
 
-    # Overlay
     if vision_config.enable_overlay:
         overlay = InfoOverlay(position='right', width=250, alpha=0.7)
         transforms.append(OverlayTransform(overlay=overlay))
 
-    # Event serialization
     if vision_config.enable_event_serialization:
         serializer = EventSerializer()
         transforms.append(EventSerializationTransform(serializer=serializer))

@@ -4,8 +4,8 @@ This project builds tools to experiment with the latest in video understanding.
 
 Some cool end goals could be:
 
-- Search and retrieval on video
-- A video agent that does all of the above
+- Fast video search and retrieval
+- Composable video tasks run by agents
 
 <picture> 
   <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px""> 

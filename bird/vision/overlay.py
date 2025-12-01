@@ -50,8 +50,13 @@ class InfoOverlay:
         if events:
             for event in events:
                 if isinstance(event, dict):
-                    event_str = f"{event.get('type', 'event')} [{','.join(map(str, event.get('objects', [])))}]"
-                    self.add_event(event_str)
+                    if event.get('type') == 'vlm_segment_event':
+                        description = event.get('meta', {}).get('description', '')
+                        if description:
+                            self.add_event(description)
+                    else:
+                        event_str = f"{event.get('type', 'event')} [{','.join(map(str, event.get('objects', [])))}]"
+                        self.add_event(event_str)
                 else:
                     self.add_event(str(event))
         
@@ -100,18 +105,45 @@ class InfoOverlay:
             
             y_offset += 22
         
-        # Draw events log - simple
+        # Draw events log - latest at top
         if self.events_log and y_offset < h - 100:
             y_offset += 10
-            
-            for event in self.events_log[-4:]:  # Show last 4 events
-                # Wrap text if too long
-                if len(event) > 35:
-                    event = event[:32] + "..."
-                
-                cv2.putText(frame, event, (x_text, y_offset),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.4, self.text_color, 1)
-                y_offset += 18
+
+            recent_events = self.events_log[-4:][::-1]
+            total_events = len(self.events_log)
+
+            for idx, event in enumerate(recent_events):
+                event_num = total_events - idx
+                max_chars = 32
+
+                if len(event) > max_chars:
+                    words = event.split()
+                    lines = []
+                    current_line = []
+                    current_length = 0
+
+                    for word in words:
+                        if current_length + len(word) + 1 <= max_chars:
+                            current_line.append(word)
+                            current_length += len(word) + 1
+                        else:
+                            if current_line:
+                                lines.append(' '.join(current_line))
+                            current_line = [word]
+                            current_length = len(word)
+
+                    if current_line:
+                        lines.append(' '.join(current_line))
+
+                    for line_idx, line in enumerate(lines[:3]):
+                        prefix = f"{event_num}. " if line_idx == 0 else "   "
+                        cv2.putText(frame, prefix + line, (x_text, y_offset),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, self.text_color, 1)
+                        y_offset += 18
+                else:
+                    cv2.putText(frame, f"{event_num}. {event}", (x_text, y_offset),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.4, self.text_color, 1)
+                    y_offset += 18
         
         return frame
     

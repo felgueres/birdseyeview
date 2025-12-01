@@ -325,7 +325,7 @@ class EventDetectionTransform(Transform):
                 detected_events = detector.detect(inputs)
                 if detected_events:
                     for event in detected_events:
-                        print(f"[success] {event['type']} - {event}")
+                        print(f"[event] {event['type']} - {event}")
                 events.extend(detected_events)
             except Exception as e:
                 print(f"[fail] {detector.__class__.__name__} failed: {e}")
@@ -360,7 +360,8 @@ class EventSerializationTransform(Transform):
 
 
 class TemporalSegmentationTransform(Transform):
-    def __init__(self, temporal_segmenter, similarity_threshold: float = 0.85, sample_rate: int = 1):
+    def __init__(self, temporal_segmenter, similarity_threshold: float = 0.9, sample_rate: int = 1,
+                 min_change_distance: int = 10):
         super().__init__(
             name="temporal_segmentation",
             input_keys=["frame", "frame_count"],
@@ -371,15 +372,16 @@ class TemporalSegmentationTransform(Transform):
         self.temporal_segmenter = temporal_segmenter
         self.similarity_threshold = similarity_threshold
         self.sample_rate = sample_rate
+        self.min_change_distance = min_change_distance
         self.previous_embedding = None
         self.embeddings_history = []
         self.similarities_history = []
+        self.last_change_point_frame = -min_change_distance
 
     def forward(self, inputs: dict) -> dict:
         frame = inputs["frame"]
         frame_count = inputs.get("frame_count", 0)
 
-        # Extract embedding for current frame
         import torch
         with torch.no_grad():
             processed_inputs = self.temporal_segmenter.processor(
@@ -392,7 +394,6 @@ class TemporalSegmentationTransform(Transform):
             embedding = embedding / embedding.norm(dim=-1, keepdim=True)
             embedding_np = embedding.cpu().numpy()[0]
 
-        # Compute similarity with previous frame
         similarity = None
         is_change_point = False
 
@@ -400,11 +401,12 @@ class TemporalSegmentationTransform(Transform):
             similarity = float(np.dot(self.previous_embedding, embedding_np))
             self.similarities_history.append(similarity)
 
-            # Detect change point
             if similarity < self.similarity_threshold:
-                is_change_point = True
+                frames_since_last_change = frame_count - self.last_change_point_frame
+                if frames_since_last_change >= self.min_change_distance:
+                    is_change_point = True
+                    self.last_change_point_frame = frame_count
 
-        # Update history
         self.embeddings_history.append(embedding_np)
         self.previous_embedding = embedding_np
 
@@ -413,3 +415,151 @@ class TemporalSegmentationTransform(Transform):
             "frame_similarity": similarity,
             "is_change_point": is_change_point
         }
+
+
+class VLMSegmentEventTransform(Transform):
+    def __init__(self, vlm_provider: str = "openai", vlm_model: str = "gpt-4o-mini",
+                 clip_duration_frames: int = 10, cooldown: float = 5.0):
+        super().__init__(
+            name="vlm_segment_event",
+            input_keys=["frame", "is_change_point", "frame_count", "timestamp"],
+            output_keys=["events"],
+            run_every_n_frames=1,
+            critical=False
+        )
+        self.vlm_provider = vlm_provider.lower()
+        self.vlm_model = vlm_model
+        self.clip_duration_frames = clip_duration_frames
+        self.cooldown = cooldown
+        self.last_triggered = 0
+
+        self.frame_buffer = []
+        self.max_buffer_size = clip_duration_frames * 2
+
+        if self.vlm_provider == "openai":
+            try:
+                from openai import OpenAI
+                import os
+                self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                self.vlm_available = bool(os.getenv("OPENAI_API_KEY"))
+                if not self.vlm_available:
+                    print("[VLMSegmentEventTransform] OPENAI_API_KEY not set in environment")
+            except ImportError:
+                print("[VLMSegmentEventTransform] OpenAI not available. Install: pip install openai")
+                self.vlm_available = False
+        else:
+            print(f"[VLMSegmentEventTransform] Unsupported VLM provider: {self.vlm_provider}")
+            self.vlm_available = False
+
+    def forward(self, inputs: dict) -> dict:
+        frame = inputs["frame"]
+        is_change_point = inputs.get("is_change_point", False)
+        frame_count = inputs.get("frame_count", 0)
+        timestamp = inputs.get("timestamp", 0)
+
+        self.frame_buffer.append(frame.copy())
+        if len(self.frame_buffer) > self.max_buffer_size:
+            self.frame_buffer.pop(0)
+
+        events = []
+
+        if not self.vlm_available:
+            return {"events": events}
+
+        if is_change_point and (timestamp - self.last_triggered) >= self.cooldown:
+            print(f"[VLMSegmentEventTransform] Change point detected at frame {frame_count}, triggering VLM analysis")
+
+            clip_frames = self._extract_clip_around_change_point()
+
+            if clip_frames:
+                event_description = self._analyze_clip_with_vlm(clip_frames, frame_count, timestamp)
+
+                if event_description:
+                    events.append({
+                        "type": "vlm_segment_event",
+                        "confidence": 1.0,
+                        "objects": [],
+                        "meta": {
+                            "description": event_description,
+                            "frame_count": frame_count,
+                            "clip_frames": len(clip_frames)
+                        }
+                    })
+                    self.last_triggered = timestamp
+
+        return {"events": events}
+
+    def _extract_clip_around_change_point(self):
+        if len(self.frame_buffer) < 4:
+            return list(self.frame_buffer)
+
+        # Get 2 frames before and 2 frames after the change point
+        # The change point is at the current position (end of buffer)
+        buffer_len = len(self.frame_buffer)
+
+        # Sample 2 frames from earlier in the buffer (before the change)
+        before_indices = [buffer_len - 15, buffer_len - 10] if buffer_len >= 15 else [0, buffer_len // 4]
+
+        # Sample 2 frames from recent buffer (after the change)
+        after_indices = [buffer_len - 5, buffer_len - 1]
+
+        frames_before = [self.frame_buffer[max(0, min(i, buffer_len-1))] for i in before_indices]
+        frames_after = [self.frame_buffer[max(0, min(i, buffer_len-1))] for i in after_indices]
+
+        return frames_before + frames_after
+
+    def _analyze_clip_with_vlm(self, clip_frames, frame_count, timestamp):
+        if self.vlm_provider == "openai":
+            return self._analyze_with_openai(clip_frames, frame_count, timestamp)
+        return None
+
+    def _analyze_with_openai(self, clip_frames, frame_count, timestamp):
+        import base64
+
+        # clip_frames now contains [before1, before2, after1, after2]
+        base64_images = []
+        for frame in clip_frames:
+            _, buffer = cv2.imencode('.jpg', frame)
+            base64_image = base64.b64encode(buffer.tobytes()).decode('utf-8')
+            base64_images.append(base64_image)
+
+        prompt = """You are shown 4 frames from a video where a scene change was detected.
+
+Images 1-2: BEFORE the change
+Images 3-4: AFTER the change
+
+Describe what changed in one brief sentence.
+
+Examples:
+- "Person enters room"
+- "Camera pans left"
+- "Person stands up"
+
+Respond with ONLY the change description."""
+
+        try:
+            content_parts = [{'type': 'text', 'text': prompt}]
+            for base64_image in base64_images:
+                content_parts.append({
+                    'type': 'image_url',
+                    'image_url': {
+                        'url': f"data:image/jpeg;base64,{base64_image}"
+                    }
+                })
+
+            response = self.openai_client.chat.completions.create(
+                model=self.vlm_model,
+                messages=[{
+                    'role': 'user',
+                    'content': content_parts
+                }],
+                max_tokens=150
+            )
+
+            description = response.choices[0].message.content.strip()
+            print(f"[VLMSegmentEventTransform] VLM event: {description}")
+            return description
+
+        except Exception as e:
+            print(f"[VLMSegmentEventTransform] OpenAI error: {e}")
+            return None
