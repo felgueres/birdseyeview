@@ -1,4 +1,16 @@
-12/1/2025 this
+12/1/2025 added sqlite and ability to query over vlm events. i now have this
+loop:
+
+1. video frames as input
+2. a frame is processed by a composable pipeline in a dag
+3. the unit of processing is a Transform, which varies from classic computer
+   vision tasks like event extraction, getting embeddings, and sinking the data
+   to sqlite
+4. search and retrieval of scenes by frame
+5. runs from the cli. spending time on the ui is a waste of time
+
+The next step is grabbing an eval and hill climb to make events extraction,
+search, the transforms better and faster. Software tooling first, then hardware.
 
 11/30/2025 video is the current dominant form of the internet. there are more
 bits in the form of video than text. however video is lower value per bit. so
