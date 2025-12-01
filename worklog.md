@@ -1,8 +1,12 @@
-11/30/2025 one way to look at video is that it is currently the dominant form of
-the internet. there are more bits in the form of video than text. however video
-is lower value per bit. so humans want to consume video despite it being less
-valuable than text. video understanding through ai helps compress this high
-information, low value medium into a high value one
+12/1/2025 this
+
+11/30/2025 video is the current dominant form of the internet. there are more
+bits in the form of video than text. however video is lower value per bit. so
+humans want to consume video despite it being less valuable than text. video
+understanding through ai helps compress this high information, low value medium
+into a high value one
+
+ideas: unmanned operation and maintenance
 
 11/29/2025 most engineering problems are solved with good tooling. solve tooling
 and the solution to the problem follows. video understanding it's the og

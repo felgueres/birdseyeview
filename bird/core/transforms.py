@@ -10,7 +10,6 @@ from bird.vision.scene_graph import SceneGraphBuilder
 from bird.vision.optical_flow import OpticalFlowTracker
 from bird.vision.overlay import InfoOverlay
 from bird.events.base import Event
-from bird.events.serializer import EventSerializer
 
 
 class DepthEstimationTransform(Transform):
@@ -334,7 +333,7 @@ class EventDetectionTransform(Transform):
 
 
 class EventSerializationTransform(Transform):
-    def __init__(self, serializer: EventSerializer, run_every_n_frames: int = 1):
+    def __init__(self, serializer, run_every_n_frames: int = 1):
         super().__init__(
             name="event_serialization",
             input_keys=["events", "scene_graph", "frame_count", "timestamp"],
@@ -342,7 +341,7 @@ class EventSerializationTransform(Transform):
             run_every_n_frames=run_every_n_frames,
             critical=False
         )
-        self.serializer = serializer
+        self.writer = serializer
 
     def forward(self, inputs: dict) -> dict:
         events = inputs.get("events", [])
@@ -351,10 +350,10 @@ class EventSerializationTransform(Transform):
         timestamp = inputs.get("timestamp", 0)
 
         if events:
-            self.serializer.write_event(frame_count, timestamp, events)
+            self.writer.write_event(frame_count, timestamp, events)
 
         if scene_graph:
-            self.serializer.write_scene_graph(frame_count, timestamp, scene_graph)
+            self.writer.write_scene_graph(frame_count, timestamp, scene_graph)
 
         return {}
 

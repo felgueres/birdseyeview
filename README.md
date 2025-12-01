@@ -5,7 +5,7 @@ This project builds tools to experiment with the latest in video understanding.
 Some cool end goals could be:
 
 - Fast video search and retrieval
-- Composable video tasks run by agents
+- Video tools to handoff to LLMs
 
 <picture> 
   <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px""> 
@@ -23,7 +23,7 @@ Some cool end goals could be:
 | Depth estimation      | Predict distance on every pixel from the camera. Per-pixel depth map.                             | X           |
 | Temporal segmentation | Split by activity phases. Timeline segments.                                                      | X           |
 | Event detection       | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events.                   | X           |
-| Track and predict     | Track + forecast future positions. Trajectory with predicted path.                                | ?           |
+| Track and predict     | Track + forecast future positions. Trajectory with predicted path.                                | TBD         |
 
 ```
 birdview/
@@ -83,7 +83,11 @@ ollama pull llava:7b # If 16GB+ RAM: ollama pull llava:13b
 ## Usage
 
 ```bash
+# To process video file
 python3 -m bird.cli --video-path ./data/entering.mp4 --camera video --enable-events --enable-event-serialization --enable-segmentation --enable-tracking
+
+# To query
+python3 -m bird.query_events --session sessions/2025-12-01T07-40-31 --query "child jumping"
 
 modal deploy modal/cli.py
 modal app stop birdview
@@ -95,3 +99,9 @@ modal app list
 ```bash
 python3 server/app.py
 ```
+
+## Search
+
+<picture> 
+  <img alt="interactive ui demo" src="/docs/query.png" width="450px""> 
+</picture>

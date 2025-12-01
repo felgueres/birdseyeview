@@ -23,7 +23,7 @@ from bird.core.transforms import (
     TemporalSegmentationTransform,
     VLMSegmentEventTransform,
 )
-from bird.events.serializer import EventSerializer
+from bird.events.writer import EventWriter
 import cv2
 import time
 
@@ -180,8 +180,8 @@ def build_dag_from_config(vision_config: VisionConfig):
         transforms.append(OverlayTransform(overlay=overlay))
 
     if vision_config.enable_event_serialization:
-        serializer = EventSerializer()
-        transforms.append(EventSerializationTransform(serializer=serializer))
+        writer = EventWriter()
+        transforms.append(EventSerializationTransform(serializer=writer))
 
     return DAG(transforms)
 
