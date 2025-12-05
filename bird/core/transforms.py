@@ -417,7 +417,7 @@ class TemporalSegmentationTransform(Transform):
 
 
 class VLMSegmentEventTransform(Transform):
-    def __init__(self, vlm_provider: str = "openai", vlm_model: str = "gpt-4o-mini",
+    def __init__(self, vlm_provider: str = "ollama", vlm_model: str = "llava:7b",
                  clip_duration_frames: int = 10, cooldown: float = 5.0):
         super().__init__(
             name="vlm_segment_event",
@@ -435,7 +435,25 @@ class VLMSegmentEventTransform(Transform):
         self.frame_buffer = []
         self.max_buffer_size = clip_duration_frames * 2
 
-        if self.vlm_provider == "openai":
+        if self.vlm_provider == "ollama":
+            try:
+                import ollama
+                self.vlm_available = True
+                try:
+                    models = ollama.list()
+                    model_names = [m.model for m in models.get('models', [])]
+                    if self.vlm_model not in model_names:
+                        print(f"[VLMSegmentEventTransform] Ollama model {self.vlm_model} not found. Run: ollama pull {self.vlm_model}")
+                        self.vlm_available = False
+                    else:
+                        print(f"[VLMSegmentEventTransform] Using Ollama {self.vlm_model}")
+                except Exception as e:
+                    print(f"[VLMSegmentEventTransform] Ollama error: {e}")
+                    self.vlm_available = False
+            except ImportError:
+                print("[VLMSegmentEventTransform] Ollama not available. Install: pip install ollama")
+                self.vlm_available = False
+        elif self.vlm_provider == "openai":
             try:
                 from openai import OpenAI
                 import os
@@ -489,15 +507,15 @@ class VLMSegmentEventTransform(Transform):
         return {"events": events}
 
     def _extract_clip_around_change_point(self):
-        if len(self.frame_buffer) < 4:
+        if len(self.frame_buffer) < 3:
             return list(self.frame_buffer)
 
-        # Get 2 frames before and 2 frames after the change point
+        # Get 1 frame before and 2 frames after the change point
         # The change point is at the current position (end of buffer)
         buffer_len = len(self.frame_buffer)
 
-        # Sample 2 frames from earlier in the buffer (before the change)
-        before_indices = [buffer_len - 15, buffer_len - 10] if buffer_len >= 15 else [0, buffer_len // 4]
+        # Sample 1 frame from earlier in the buffer (before the change)
+        before_indices = [buffer_len - 15] if buffer_len >= 15 else [0]
 
         # Sample 2 frames from recent buffer (after the change)
         after_indices = [buffer_len - 5, buffer_len - 1]
@@ -508,24 +526,67 @@ class VLMSegmentEventTransform(Transform):
         return frames_before + frames_after
 
     def _analyze_clip_with_vlm(self, clip_frames, frame_count, timestamp):
-        if self.vlm_provider == "openai":
+        if self.vlm_provider == "ollama":
+            return self._analyze_with_ollama(clip_frames, frame_count, timestamp)
+        elif self.vlm_provider == "openai":
             return self._analyze_with_openai(clip_frames, frame_count, timestamp)
         return None
+
+    def _analyze_with_ollama(self, clip_frames, frame_count, timestamp):
+        import ollama
+
+        prompt = """You are shown 3 frames from a video where a scene change was detected.
+
+Image 1: BEFORE the change
+Images 2-3: AFTER the change
+
+Describe what changed in one brief sentence.
+
+Examples:
+- "Person enters room"
+- "Camera pans left"
+- "Person stands up"
+
+Respond with ONLY the change description."""
+
+        try:
+            image_buffers = []
+            for frame in clip_frames:
+                resized = cv2.resize(frame, (512, 512))
+                _, buffer = cv2.imencode('.jpg', resized, [cv2.IMWRITE_JPEG_QUALITY, 75])
+                image_buffers.append(buffer.tobytes())
+
+            response = ollama.chat(
+                model=self.vlm_model,
+                messages=[{
+                    'role': 'user',
+                    'content': prompt,
+                    'images': image_buffers
+                }]
+            )
+
+            description = response['message']['content'].strip()
+            print(f"[VLMSegmentEventTransform] VLM event: {description}")
+            return description
+
+        except Exception as e:
+            print(f"[VLMSegmentEventTransform] Ollama error: {e}")
+            return None
 
     def _analyze_with_openai(self, clip_frames, frame_count, timestamp):
         import base64
 
-        # clip_frames now contains [before1, before2, after1, after2]
         base64_images = []
         for frame in clip_frames:
-            _, buffer = cv2.imencode('.jpg', frame)
+            resized = cv2.resize(frame, (512, 512))
+            _, buffer = cv2.imencode('.jpg', resized, [cv2.IMWRITE_JPEG_QUALITY, 75])
             base64_image = base64.b64encode(buffer.tobytes()).decode('utf-8')
             base64_images.append(base64_image)
 
-        prompt = """You are shown 4 frames from a video where a scene change was detected.
+        prompt = """You are shown 3 frames from a video where a scene change was detected.
 
-Images 1-2: BEFORE the change
-Images 3-4: AFTER the change
+Image 1: BEFORE the change
+Images 2-3: AFTER the change
 
 Describe what changed in one brief sentence.
 
@@ -542,7 +603,8 @@ Respond with ONLY the change description."""
                 content_parts.append({
                     'type': 'image_url',
                     'image_url': {
-                        'url': f"data:image/jpeg;base64,{base64_image}"
+                        'url': f"data:image/jpeg;base64,{base64_image}",
+                        'detail': 'low'
                     }
                 })
 

@@ -19,10 +19,8 @@ def main():
                         help='Webcam index (default: 0)')
     parser.add_argument('--video-path', type=str, default=None,
                         help='Path to input video when using --camera video')
-    parser.add_argument('--vlm', choices=['ollama', 'openai'], default=None,
-                        help='VLM provider: ollama (local) or openai (API). Auto-detected from model if not specified.')
     parser.add_argument('--model', default=None,
-                        help='VLM model name (default: llava:7b for ollama, gpt-4o for openai)')
+                        help='VLM model name (default: llava:7b for ollama, gpt-4o-mini for openai)')
     parser.add_argument('--enable-scene-graph', action='store_true',
                         help='Enable scene graph generation')
     parser.add_argument('--enable-tracking', action='store_true', default=False,
@@ -60,11 +58,16 @@ def main():
                         help='Enable VLM-based event detection')
     
     args = parser.parse_args()
-    if args.model and not args.vlm:
-        if args.model.startswith('gpt'):
-            args.vlm = 'openai'
-        else:
-            args.vlm = 'ollama'
+
+    def get_provider_from_model(model_name):
+        if not model_name:
+            return 'ollama'
+        if model_name.startswith('gpt'):
+            return 'openai'
+        return 'ollama'
+
+    vlm_provider = get_provider_from_model(args.model)
+    vlm_model = args.model if args.model else ('llava:7b' if vlm_provider == 'ollama' else 'gpt-4o-mini')
 
     if args.camera == "sony":
         print("Connecting to Sony A5000 via WiFi...")
@@ -109,14 +112,16 @@ def main():
             enable_event_serialization=args.enable_event_serialization,
             enable_temporal_segmentation=args.enable_temporal_segmentation,
             enable_vlm_events=args.enable_vlm_events,
+            vlm_events_provider=vlm_provider,
+            vlm_events_model=vlm_model,
         )
-        vision_config.scene_graph_vlm_provider = args.vlm
-        vision_config.scene_graph_vlm_model = args.model
+        vision_config.scene_graph_vlm_provider = vlm_provider
+        vision_config.scene_graph_vlm_model = vlm_model
         print(f"\n{'='*60}")
         print(f"Camera: {args.camera}")
         print(f"Model: {vision_config.model_name}")
-        if args.enable_scene_graph:
-            print(f"VLM: {args.vlm} ({args.model})")
+        if args.enable_scene_graph or args.enable_vlm_events:
+            print(f"VLM: {vlm_provider} ({vlm_model})")
         print(f"Tracking: {args.enable_tracking}")
         if args.enable_events:
             print(f"Events: Enabled")
