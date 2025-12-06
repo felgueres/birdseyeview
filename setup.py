@@ -26,6 +26,8 @@ setup(
         "transformers>=4.30.0",
         "python-dotenv>=1.2.1",
         "graphviz>=0.12",
-        "pylint>=3.3.9"
+        "pylint>=3.3.9",
+        "rasterio>=1.3.0",
+        "requests>=2.31.0"
     ] 
 )

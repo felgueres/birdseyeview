@@ -1,3 +1,13 @@
+12/6/2025 Sentinel2 is a free open source satellite data by the EU. Getting
+tiles is easy, resolution is 10meters per pixel, commercial sats give you 1 or
+even less (insane). You can transform the data in many ways to make it easier to
+make inferences, and there's satellite specific models that work well for
+segmentation tasks. I think the simplest workflow is tracking change. Let a user
+define a parcel or polygon and run checks on every satellite pass: farmland,
+parking lots, stations, remote areas, construction sites, ports.
+
+Place a polygon, tell me what changed. Hill identified, climbing.
+
 12/1/2025 added sqlite and ability to query over vlm events. i now have this
 loop:
 
