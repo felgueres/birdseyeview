@@ -6,6 +6,7 @@ Defines geographic regions for queryable Earth system.
 
 from typing import List, Dict
 from dataclasses import dataclass
+import numpy as np
 
 
 @dataclass
@@ -33,58 +34,30 @@ class AOI:
         return width_km * height_km
 
 
-import numpy as np
-
-
-CALIFORNIA_AOIS = {
-    "sf_bay": AOI(
+AREAS_OF_INTEREST = {
+    "bay_area": AOI(
         name="San Francisco Bay Area",
         bbox=[-122.5, 37.2, -121.7, 37.9],
         description="Dense urban, tech infrastructure, ports, diverse land use",
-        priority_event_types=["construction_detected", "land_cover_change"]
+        priority_event_types=["hill_identified", "hill_climbing"]
     ),
-    "central_valley": AOI(
-        name="Central Valley Agriculture",
-        bbox=[-121.5, 36.5, -120.0, 37.5],
-        description="Major agricultural region, irrigation, crop cycles",
-        priority_event_types=["vegetation_change", "water_level_change"]
-    ),
-    "la_metro": AOI(
-        name="Los Angeles Metro",
-        bbox=[-118.5, 33.7, -117.7, 34.3],
-        description="Urban sprawl, port logistics, infrastructure",
-        priority_event_types=["construction_detected", "land_cover_change"]
-    ),
-    "sierra_nevada": AOI(
-        name="Sierra Nevada",
-        bbox=[-120.5, 37.5, -119.0, 38.5],
-        description="Wildfire monitoring, snow cover, forest health",
-        priority_event_types=["vegetation_change", "fire_detected"]
-    ),
-    "imperial_valley": AOI(
-        name="Imperial Valley Solar",
-        bbox=[-115.7, 32.7, -114.6, 33.2],
-        description="Solar farm development, desert agriculture",
-        priority_event_types=["construction_detected", "solar_farm_detected"]
-    )
 }
-
 
 def get_aoi(name: str) -> AOI:
     """Get AOI by name."""
-    if name not in CALIFORNIA_AOIS:
-        raise ValueError(f"Unknown AOI: {name}. Available: {list(CALIFORNIA_AOIS.keys())}")
-    return CALIFORNIA_AOIS[name]
+    if name not in AREAS_OF_INTEREST:
+        raise ValueError(f"Unknown AOI: {name}. Available: {list(AREAS_OF_INTEREST.keys())}")
+    return AREAS_OF_INTEREST[name]
 
 
 def list_aois() -> Dict[str, AOI]:
     """List all available AOIs."""
-    return CALIFORNIA_AOIS
+    return AREAS_OF_INTEREST
 
 
 if __name__ == "__main__":
     print("Available AOIs for California:\n")
-    for name, aoi in CALIFORNIA_AOIS.items():
+    for name, aoi in AREAS_OF_INTEREST.items():
         print(f"{name}:")
         print(f"  {aoi.description}")
         print(f"  Bbox: {aoi.bbox}")
