@@ -50,7 +50,8 @@ def download_and_process_latest(
     max_cloud_cover: float = 20,
     enable_vlm: bool = True,
     lookback_days: int = 30,
-    display: bool = True
+    display: bool = True,
+    show_multispectral: bool = True
 ) -> None:
     """
     Download latest imagery for bbox and process through pipeline.
@@ -62,6 +63,7 @@ def download_and_process_latest(
         enable_vlm: Enable VLM analysis
         lookback_days: How many days to look back for imagery
         display: Show live visualization window
+        show_multispectral: Show multispectral bands alongside RGB
     """
     downloader = Sentinel2Downloader()
 
@@ -92,6 +94,29 @@ def download_and_process_latest(
     latest_tile = tiles[-1]
     print(f"Latest tile: {latest_tile}")
 
+    if show_multispectral:
+        from bird.satellite.multispectral_viewer import MultispectralViewer
+
+        print("\n" + "=" * 60)
+        print("Multispectral View")
+        print("=" * 60)
+
+        viewer = MultispectralViewer(output_dir=str(Path(output_dir) / "multispectral"))
+
+        composite = viewer.display_tile_multispectral(
+            tile=latest_tile,
+            tile_size=(512, 512),
+            save_output=True
+        )
+
+        if composite is not None and display:
+            import cv2
+            window_name = f"Multispectral - {latest_tile.date}"
+            cv2.imshow(window_name, cv2.cvtColor(composite, cv2.COLOR_RGB2BGR))
+            print(f"\nPress any key to continue...")
+            cv2.waitKey(0)
+            cv2.destroyWindow(window_name)
+
     tiles_dir = Path(output_dir) / "latest_tiles"
     tiles_dir.mkdir(parents=True, exist_ok=True)
 
@@ -104,7 +129,7 @@ def download_and_process_latest(
         rgb = cv2.imread(str(tile_path))
         rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
     else:
-        print(f"\nDownloading latest tile to {tiles_dir}...")
+        print(f"\nDownloading RGB tile to {tiles_dir}...")
         rgb = downloader.download_rgb_thumbnail(latest_tile, output_size=(512, 512))
 
         if rgb is None:
@@ -146,12 +171,14 @@ def main():
                         help='Output directory (default: ./data/satellite)')
     parser.add_argument('--max-cloud-cover', type=float, default=20,
                         help='Maximum cloud cover percentage (default: 20)')
-    parser.add_argument('--enable-vlm', action='store_true', default=False, 
+    parser.add_argument('--enable-vlm', action='store_true', default=False,
     help='Enable VLM analysis (requires OpenAI_API_KEY in .env)')
     parser.add_argument('--lookback-days', type=int, default=30,
                         help='Days to look back for imagery (default: 30)')
     parser.add_argument('--no-display', action='store_true', default=False,
                         help='Disable live visualization window')
+    parser.add_argument('--no-multispectral', action='store_true', default=False,
+                        help='Disable multispectral band display')
 
     args = parser.parse_args()
 
@@ -169,6 +196,7 @@ def main():
     print(f"Bbox: {bbox}")
     print(f"Max cloud cover: {args.max_cloud_cover}%")
     print(f"VLM enabled: {args.enable_vlm}")
+    print(f"Multispectral enabled: {not args.no_multispectral}")
     print(f"{'='*60}\n")
 
     download_and_process_latest(
@@ -177,7 +205,8 @@ def main():
         max_cloud_cover=args.max_cloud_cover,
         enable_vlm=args.enable_vlm,
         lookback_days=args.lookback_days,
-        display=not args.no_display
+        display=not args.no_display,
+        show_multispectral=not args.no_multispectral
     )
 
 

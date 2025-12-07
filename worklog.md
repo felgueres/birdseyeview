@@ -9,8 +9,7 @@ tiles, but 22K are land.
 Parcel tasks: extract parcel boundaries, land cover classification, crop type
 classifiers (using a timeseries of S2), veg indicators (NDVI, phenology,
 greenup, stress) which infers yield forecasts, change detection, crop
-management. Probably the least explored app is emb-based similar parcels
-finding.
+management. Probably the least explored app is emb-based similar parcel finding.
 
 12/6/2025 Sentinel2 is a free open source satellite data by the EU. Getting
 tiles is easy, resolution is 10meters per pixel, commercial sats give you 1 or
