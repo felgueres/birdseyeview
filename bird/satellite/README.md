@@ -24,5 +24,5 @@ python3 -m bird.satellite.multispectral_viewer \
 | B12  | SWIR2 (Shortwave Infrared 2, deeper SWIR, detects fires and minerals)                          | 2190            | 20m        | Fire, minerals            |
 
 <picture> 
-  <img alt="interactive ui demo" src="/docs/multispectral.png" width="450px""> 
+  <img alt="spectral" src="/docs/multispectral.jpg" width="450px""> 
 </picture>
