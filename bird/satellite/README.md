@@ -1,4 +1,8 @@
-Sentinel-2 over spectral bands (RGB, NIR, SWIR).
+## Spectral tasks
+
+<picture> 
+  <img alt="spectral" src="/docs/multispectral.jpg"> 
+</picture>
 
 ```bash
 python3 -m bird.satellite.multispectral_viewer \
@@ -22,7 +26,3 @@ python3 -m bird.satellite.multispectral_viewer \
 | B10  | Cirrus (detects high-altitude cirrus clouds)                                                   | 1375            | 60m        | Cloud detection           |
 | B11  | SWIR1 (Shortwave Infrared 1, sensitive to moisture content)                                    | 1610            | 20m        | Moisture, snow/ice        |
 | B12  | SWIR2 (Shortwave Infrared 2, deeper SWIR, detects fires and minerals)                          | 2190            | 20m        | Fire, minerals            |
-
-<picture> 
-  <img alt="spectral" src="/docs/multispectral.jpg" width="450px""> 
-</picture>
