@@ -39,7 +39,14 @@ AREAS_OF_INTEREST = {
         name="San Francisco Bay Area",
         bbox=[-122.5, 37.2, -121.7, 37.9],
         description="Dense urban, tech infrastructure, ports, diverse land use",
-        priority_event_types=["hill_identified", "hill_climbing"]
+        priority_event_types=["vegetation_change"]
+    ),
+    # 20.456915577634764, -100.07492154345282
+    "san_gil": AOI(
+        name="Mexico City",
+        bbox=[20.456915577634764, -100.07492154345282, 20.466915577634764, -100.06492154345282],
+        description="Urban, industrial, commercial, diverse land use",
+        priority_event_types=["vegetation_change"]
     ),
 }
 

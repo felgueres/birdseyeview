@@ -402,6 +402,210 @@ class TileBatchProcessor:
 
         return events
 
+    def process_tiles_with_display(
+        self,
+        max_tiles: Optional[int] = None,
+        pattern: str = "*.jpg",
+        save_annotations: bool = True
+    ):
+        """Process tiles with live visualization display."""
+        import cv2
+
+        tiles = self.get_tile_paths(pattern)
+
+        if max_tiles:
+            tiles = tiles[:max_tiles]
+
+        print(f"Processing {len(tiles)} tiles from {self.tiles_dir}")
+        print(f"Session: {self.session_dir}")
+        print(f"VLM enabled: {self.enable_vlm}")
+        print("=" * 60)
+        print("\nPress 'q' to quit, any other key to continue to next tile")
+
+        for i, tile_path in enumerate(tiles):
+            print(f"\n[{i+1}/{len(tiles)}] Processing {tile_path.name}...")
+
+            tile = cv2.imread(str(tile_path))
+            if tile is None:
+                print(f"  Failed to load {tile_path.name}, skipping")
+                continue
+
+            tile_rgb = cv2.cvtColor(tile, cv2.COLOR_BGR2RGB)
+
+            state = {
+                "frame": tile_rgb,
+                "frame_count": i,
+                "timestamp": float(i),
+                "tile_name": tile_path.name,
+                "tile_path": str(tile_path)
+            }
+
+            try:
+                result = self.dag.forward(state)
+
+                events = result.get("events", [])
+
+                vlm_description = ""
+                for event in events:
+                    if event.get("type") in ["vlm_segment_event", "vlm_tile_analysis"]:
+                        vlm_description = event.get("meta", {}).get("description", "")
+
+                for event in events:
+                    if "meta" not in event:
+                        event["meta"] = {}
+                    event["meta"]["tile_name"] = tile_path.name
+                    event["meta"]["tile_path"] = str(tile_path)
+
+                print(f"  Events: {len(events)}")
+                if vlm_description:
+                    print(f"  VLM: {vlm_description[:100]}...")
+
+                display_frame = self._create_display_frame(
+                    tile_rgb,
+                    result,
+                    tile_path.name,
+                    vlm_description
+                )
+
+                cv2.imshow("Satellite Analysis", cv2.cvtColor(display_frame, cv2.COLOR_RGB2BGR))
+
+                key = cv2.waitKey(0)
+                if key == ord('q'):
+                    print("\nStopping...")
+                    break
+
+                if save_annotations:
+                    self._save_annotated_tile(
+                        tile_rgb,
+                        result,
+                        tile_path.name,
+                        vlm_description
+                    )
+
+            except Exception as e:
+                print(f"  Error processing {tile_path.name}: {e}")
+                continue
+
+        cv2.destroyAllWindows()
+        print("\n" + "=" * 60)
+        print("Processing complete!")
+        self.print_statistics()
+
+    def _create_display_frame(
+        self,
+        tile: np.ndarray,
+        result: dict,
+        tile_name: str,
+        vlm_description: str = ""
+    ) -> np.ndarray:
+        """Create display frame with overlay and segmentation."""
+        h, w = tile.shape[:2]
+
+        display_width = w + 250
+        display = np.zeros((h, display_width, 3), dtype=np.uint8)
+
+        tile_with_overlay = tile.copy()
+        land_cover_mask = result.get("land_cover_mask")
+
+        if land_cover_mask is not None:
+            overlay = np.zeros_like(tile_with_overlay)
+
+            overlay[land_cover_mask == 1] = [0, 255, 0]
+            overlay[land_cover_mask == 2] = [0, 0, 255]
+            overlay[land_cover_mask == 3] = [255, 100, 0]
+
+            tile_with_overlay = cv2.addWeighted(tile_with_overlay, 0.7, overlay, 0.3, 0)
+
+        display[:h, :w] = tile_with_overlay
+
+        panel_x = w
+        y_offset = 30
+
+        cv2.putText(display, tile_name, (panel_x + 10, y_offset),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        y_offset += 40
+
+        cv2.putText(display, "Land Cover:", (panel_x + 10, y_offset),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1)
+        y_offset += 25
+
+        events = result.get("events", [])
+        for event in events:
+            if event.get("type") in ["vegetation_area", "water_area", "built_area"]:
+                meta = event.get("meta", {})
+
+                veg_pct = meta.get("vegetation_pct", 0)
+                water_pct = meta.get("water_pct", 0)
+                built_pct = meta.get("built_pct", 0)
+
+                cv2.putText(display, f"  Vegetation: {veg_pct:.1f}%",
+                           (panel_x + 10, y_offset), cv2.FONT_HERSHEY_SIMPLEX,
+                           0.4, (0, 255, 0), 1)
+                y_offset += 20
+
+                cv2.putText(display, f"  Water: {water_pct:.1f}%",
+                           (panel_x + 10, y_offset), cv2.FONT_HERSHEY_SIMPLEX,
+                           0.4, (0, 150, 255), 1)
+                y_offset += 20
+
+                cv2.putText(display, f"  Built: {built_pct:.1f}%",
+                           (panel_x + 10, y_offset), cv2.FONT_HERSHEY_SIMPLEX,
+                           0.4, (255, 150, 0), 1)
+                y_offset += 30
+                break
+
+        if vlm_description:
+            y_offset += 10
+            cv2.putText(display, "VLM Analysis:", (panel_x + 10, y_offset),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1)
+            y_offset += 25
+
+            words = vlm_description.split()
+            lines = []
+            current_line = []
+            max_chars = 24
+
+            for word in words:
+                test_line = ' '.join(current_line + [word])
+                if len(test_line) <= max_chars:
+                    current_line.append(word)
+                else:
+                    if current_line:
+                        lines.append(' '.join(current_line))
+                    current_line = [word]
+
+            if current_line:
+                lines.append(' '.join(current_line))
+
+            for line in lines[:10]:
+                cv2.putText(display, line, (panel_x + 10, y_offset),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.32, (255, 255, 255), 1)
+                y_offset += 16
+
+        legend_y = h - 80
+        cv2.putText(display, "Legend:", (panel_x + 10, legend_y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
+        legend_y += 20
+
+        cv2.rectangle(display, (panel_x + 10, legend_y - 8),
+                     (panel_x + 25, legend_y + 2), (0, 255, 0), -1)
+        cv2.putText(display, "Vegetation", (panel_x + 30, legend_y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
+        legend_y += 15
+
+        cv2.rectangle(display, (panel_x + 10, legend_y - 8),
+                     (panel_x + 25, legend_y + 2), (0, 0, 255), -1)
+        cv2.putText(display, "Water", (panel_x + 30, legend_y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
+        legend_y += 15
+
+        cv2.rectangle(display, (panel_x + 10, legend_y - 8),
+                     (panel_x + 25, legend_y + 2), (255, 100, 0), -1)
+        cv2.putText(display, "Built/Infrastructure", (panel_x + 30, legend_y),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
+
+        return display
+
 
 def main():
     """Example usage."""

@@ -49,7 +49,8 @@ def download_and_process_latest(
     output_dir: str,
     max_cloud_cover: float = 20,
     enable_vlm: bool = True,
-    lookback_days: int = 30
+    lookback_days: int = 30,
+    display: bool = True
 ) -> None:
     """
     Download latest imagery for bbox and process through pipeline.
@@ -60,6 +61,7 @@ def download_and_process_latest(
         max_cloud_cover: Maximum acceptable cloud cover %
         enable_vlm: Enable VLM analysis
         lookback_days: How many days to look back for imagery
+        display: Show live visualization window
     """
     downloader = Sentinel2Downloader()
 
@@ -93,18 +95,25 @@ def download_and_process_latest(
     tiles_dir = Path(output_dir) / "latest_tiles"
     tiles_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\nDownloading latest tile to {tiles_dir}...")
-    rgb = downloader.download_rgb_thumbnail(latest_tile, output_size=(512, 512))
-
-    if rgb is None:
-        print("Failed to download tile")
-        return
-
-    import cv2
     tile_filename = f"{latest_tile.tile_id}_{latest_tile.date}.jpg"
     tile_path = tiles_dir / tile_filename
-    cv2.imwrite(str(tile_path), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
-    print(f"Saved: {tile_path}")
+
+    if tile_path.exists():
+        print(f"\nUsing cached tile: {tile_path}")
+        import cv2
+        rgb = cv2.imread(str(tile_path))
+        rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
+    else:
+        print(f"\nDownloading latest tile to {tiles_dir}...")
+        rgb = downloader.download_rgb_thumbnail(latest_tile, output_size=(512, 512))
+
+        if rgb is None:
+            print("Failed to download tile")
+            return
+
+        import cv2
+        cv2.imwrite(str(tile_path), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+        print(f"Saved: {tile_path}")
 
     print(f"\nProcessing through pipeline...")
     processor = TileBatchProcessor(
@@ -114,7 +123,10 @@ def download_and_process_latest(
         enable_vlm=enable_vlm
     )
 
-    processor.process_tiles(max_tiles=1, save_annotations=True)
+    if display:
+        processor.process_tiles_with_display(max_tiles=1, save_annotations=True)
+    else:
+        processor.process_tiles(max_tiles=1, save_annotations=True)
 
     print("\n" + "=" * 60)
     print("Processing complete")
@@ -134,10 +146,12 @@ def main():
                         help='Output directory (default: ./data/satellite)')
     parser.add_argument('--max-cloud-cover', type=float, default=20,
                         help='Maximum cloud cover percentage (default: 20)')
-    parser.add_argument('--enable-vlm', action='store_true', default=False,
-                        help='Enable VLM analysis (requires OpenAI API key)')
+    parser.add_argument('--enable-vlm', action='store_true', default=False, 
+    help='Enable VLM analysis (requires OpenAI_API_KEY in .env)')
     parser.add_argument('--lookback-days', type=int, default=30,
                         help='Days to look back for imagery (default: 30)')
+    parser.add_argument('--no-display', action='store_true', default=False,
+                        help='Disable live visualization window')
 
     args = parser.parse_args()
 
@@ -162,7 +176,8 @@ def main():
         output_dir=args.output_dir,
         max_cloud_cover=args.max_cloud_cover,
         enable_vlm=args.enable_vlm,
-        lookback_days=args.lookback_days
+        lookback_days=args.lookback_days,
+        display=not args.no_display
     )
 
 
