@@ -1,8 +1,7 @@
 12/7/2025 There's active research off of Sentinel2.
 [SatClip](https://arxiv.org/pdf/2311.17179) seems interesting, it's general
-purpose location embeddings which means: text or img in -> emb out, ie. RAG,
-measure image differences. This is cool, maybe I should standup a UI to play
-with this: download randomnly sampled tiles, embed them, store in db, UI to map
+purpose location embeddings which means: text/img in -> embedding out. This is
+cool, download randomnly sampled tiles, chunk, embed, store in db, UI to map
 world map with tiles and a search box, click or search by text. Sentinel2 is 56K
 tiles, but 22K are land.
 
@@ -10,6 +9,11 @@ Parcel tasks: extract parcel boundaries, land cover classification, crop type
 classifiers (using a timeseries of S2), veg indicators (NDVI, phenology,
 greenup, stress) which infers yield forecasts, change detection, crop
 management. Probably the least explored app is emb-based similar parcel finding.
+
+One RGB earth-pass is 22K tiles, 55MB/tile, ~1TB. So a single band is 333GB.
+Sentinel-2 has 13 bands, 4.3TB/earth-pass multispectral at 10m/pixel resolution.
+
+Business models: track changes / km2 (eg. ~10K/year for 50km2, so ~200USD/km2)
 
 12/6/2025 Sentinel2 is a free open source satellite data by the EU. Getting
 tiles is easy, resolution is 10meters per pixel, commercial sats give you 1 or

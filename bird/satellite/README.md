@@ -11,6 +11,9 @@ python3 -m bird.satellite.multispectral_viewer \
   --bands rgb nir swir16 swir22
 ```
 
+One RGB earth-pass is 22K tiles, 55MB/tile, ~1TB. So a single band is 333GB.
+Sentinel-2 has 13 bands, 4.3TB/earth-pass multispectral at 10m/pixel resolution.
+
 | Band | Name (Meaning)                                                                                 | Wavelength (nm) | Resolution | Use                       |
 | ---- | ---------------------------------------------------------------------------------------------- | --------------- | ---------- | ------------------------- |
 | B01  | Coastal aerosol (detects atmospheric aerosols over water)                                      | 443             | 60m        | Aerosol detection         |
