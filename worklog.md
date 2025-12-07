@@ -15,6 +15,14 @@ Sentinel-2 has 13 bands, 4.3TB/earth-pass multispectral at 10m/pixel resolution.
 
 Business models: track changes / km2 (eg. ~10K/year for 50km2, so ~200USD/km2)
 
+The one thing about building something is that you can't look around to early
+because you'll undoubtedly find others doing it already. In the first few months
+of creating something it's best to not be concerned about other people's work.
+It'll bias you towards building what they have at best, and demotivate you
+because it makes you feel it's a solved problem. Both are usually wrong, you
+shouldn't blindly copy and there's a version of the problem that speaks to you
+and is worth doing.
+
 12/6/2025 Sentinel2 is a free open source satellite data by the EU. Getting
 tiles is easy, resolution is 10meters per pixel, commercial sats give you 1 or
 even less (insane). You can transform the data in many ways to make it easier to
