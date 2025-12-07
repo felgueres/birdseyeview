@@ -48,6 +48,18 @@ AREAS_OF_INTEREST = {
         description="Urban, industrial, commercial, diverse land use",
         priority_event_types=["vegetation_change"]
     ),
+    "topaz_solar": AOI(
+        name="Topaz Solar Farm - California",
+        bbox=[-120.10, 35.35, -120.02, 35.41],
+        description="Large-scale solar installation, 550MW capacity, 9M panels",
+        priority_event_types=["solar_panel_detection", "infrastructure_change"]
+    ),
+    "ivanpah_solar": AOI(
+        name="Ivanpah Solar Power Facility",
+        bbox=[-115.48, 35.53, -115.45, 35.56],
+        description="Concentrated solar thermal plant in Mojave Desert",
+        priority_event_types=["solar_panel_detection", "infrastructure_change"]
+    ),
 }
 
 def get_aoi(name: str) -> AOI:

@@ -17,6 +17,8 @@ from bird.core.dag import DAG
 from bird.satellite.transforms import (
     LandCoverSegmentationTransform,
     SatelliteEventExtractionTransform,
+    SolarPanelSegmentationTransform,
+    SolarInstallationEventTransform,
 )
 from bird.events.database import EventDatabase
 from bird.events.embedder import EventEmbedder
@@ -175,7 +177,8 @@ class TileBatchProcessor:
         tiles_dir: str,
         session_dir: str = "./tile_analysis_sessions",
         enable_embeddings: bool = True,
-        enable_vlm: bool = True
+        enable_vlm: bool = True,
+        enable_solar_segmentation: bool = False
     ):
         self.tiles_dir = Path(tiles_dir)
         self.session_name = self.tiles_dir.name
@@ -190,6 +193,7 @@ class TileBatchProcessor:
         self.db = self.writer.database
 
         self.enable_vlm = enable_vlm
+        self.enable_solar_segmentation = enable_solar_segmentation
         self.dag = self._build_dag()
 
         self.results_dir = self.session_dir / "annotated_tiles"
@@ -207,6 +211,17 @@ class TileBatchProcessor:
                 run_every_n_frames=1
             )
         ]
+
+        if self.enable_solar_segmentation:
+            transforms.extend([
+                SolarPanelSegmentationTransform(
+                    run_every_n_frames=1
+                ),
+                SolarInstallationEventTransform(
+                    min_coverage_pct=5.0,
+                    run_every_n_frames=1
+                )
+            ])
 
         if self.enable_vlm:
             transforms.append(TileVLMTransform(run_every_n_frames=1))
@@ -307,6 +322,8 @@ class TileBatchProcessor:
         annotated = tile.copy()
 
         land_cover_mask = result.get("land_cover_mask")
+        solar_mask = result.get("solar_mask")
+
         if land_cover_mask is not None:
             overlay = np.zeros_like(annotated)
 
@@ -315,6 +332,11 @@ class TileBatchProcessor:
             overlay[land_cover_mask == 3] = [255, 100, 0]
 
             annotated = cv2.addWeighted(annotated, 0.7, overlay, 0.3, 0)
+
+        if solar_mask is not None:
+            solar_overlay = np.zeros_like(annotated)
+            solar_overlay[solar_mask > 0] = [255, 255, 0]
+            annotated = cv2.addWeighted(annotated, 0.8, solar_overlay, 0.2, 0)
 
         events = result.get("events", [])
         for event in events:
@@ -506,6 +528,7 @@ class TileBatchProcessor:
 
         tile_with_overlay = tile.copy()
         land_cover_mask = result.get("land_cover_mask")
+        solar_mask = result.get("solar_mask")
 
         if land_cover_mask is not None:
             overlay = np.zeros_like(tile_with_overlay)
@@ -515,6 +538,11 @@ class TileBatchProcessor:
             overlay[land_cover_mask == 3] = [255, 100, 0]
 
             tile_with_overlay = cv2.addWeighted(tile_with_overlay, 0.7, overlay, 0.3, 0)
+
+        if solar_mask is not None:
+            solar_overlay = np.zeros_like(tile_with_overlay)
+            solar_overlay[solar_mask > 0] = [255, 255, 0]
+            tile_with_overlay = cv2.addWeighted(tile_with_overlay, 0.8, solar_overlay, 0.2, 0)
 
         display[:h, :w] = tile_with_overlay
 
@@ -530,6 +558,18 @@ class TileBatchProcessor:
         y_offset += 25
 
         events = result.get("events", [])
+
+        solar_coverage_pct = result.get("solar_coverage_pct")
+        if solar_coverage_pct is not None and solar_coverage_pct > 0:
+            cv2.putText(display, "Solar Detection:", (panel_x + 10, y_offset),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1)
+            y_offset += 25
+
+            cv2.putText(display, f"  Coverage: {solar_coverage_pct:.1f}%",
+                       (panel_x + 10, y_offset), cv2.FONT_HERSHEY_SIMPLEX,
+                       0.4, (255, 255, 0), 1)
+            y_offset += 30
+
         for event in events:
             if event.get("type") in ["vegetation_area", "water_area", "built_area"]:
                 meta = event.get("meta", {})
@@ -582,7 +622,7 @@ class TileBatchProcessor:
                            cv2.FONT_HERSHEY_SIMPLEX, 0.32, (255, 255, 255), 1)
                 y_offset += 16
 
-        legend_y = h - 80
+        legend_y = h - 95
         cv2.putText(display, "Legend:", (panel_x + 10, legend_y),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200, 200, 200), 1)
         legend_y += 20
@@ -603,6 +643,13 @@ class TileBatchProcessor:
                      (panel_x + 25, legend_y + 2), (255, 100, 0), -1)
         cv2.putText(display, "Built/Infrastructure", (panel_x + 30, legend_y),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
+        legend_y += 15
+
+        if solar_mask is not None:
+            cv2.rectangle(display, (panel_x + 10, legend_y - 8),
+                         (panel_x + 25, legend_y + 2), (255, 255, 0), -1)
+            cv2.putText(display, "Solar Panels", (panel_x + 30, legend_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 255, 255), 1)
 
         return display
 

@@ -49,9 +49,11 @@ def download_and_process_latest(
     output_dir: str,
     max_cloud_cover: float = 20,
     enable_vlm: bool = True,
+    enable_solar_segmentation: bool = False,
     lookback_days: int = 30,
     display: bool = True,
-    show_multispectral: bool = True
+    show_multispectral: bool = True,
+    tile_size: tuple = None
 ) -> None:
     """
     Download latest imagery for bbox and process through pipeline.
@@ -64,6 +66,7 @@ def download_and_process_latest(
         lookback_days: How many days to look back for imagery
         display: Show live visualization window
         show_multispectral: Show multispectral bands alongside RGB
+        tile_size: (width, height) for tile resolution. Use None for full native resolution.
     """
     downloader = Sentinel2Downloader()
 
@@ -105,7 +108,7 @@ def download_and_process_latest(
 
         composite = viewer.display_tile_multispectral(
             tile=latest_tile,
-            tile_size=(512, 512),
+            tile_size=tile_size,
             save_output=True
         )
 
@@ -130,7 +133,14 @@ def download_and_process_latest(
         rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
     else:
         print(f"\nDownloading RGB tile to {tiles_dir}...")
-        rgb = downloader.download_rgb_thumbnail(latest_tile, output_size=(512, 512))
+        if tile_size is None:
+            print("Using full native resolution (10980x10980 for full tile)")
+            rgb = downloader.download_tile(latest_tile, bands=['red', 'green', 'blue'])
+            if rgb is not None:
+                rgb = downloader._normalize_to_uint8(rgb)
+        else:
+            print(f"Using resolution: {tile_size}")
+            rgb = downloader.download_rgb_thumbnail(latest_tile, output_size=tile_size)
 
         if rgb is None:
             print("Failed to download tile")
@@ -145,7 +155,8 @@ def download_and_process_latest(
         tiles_dir=str(tiles_dir),
         session_dir=output_dir,
         enable_embeddings=True,
-        enable_vlm=enable_vlm
+        enable_vlm=enable_vlm,
+        enable_solar_segmentation=enable_solar_segmentation
     )
 
     if display:
@@ -179,6 +190,10 @@ def main():
                         help='Disable live visualization window')
     parser.add_argument('--no-multispectral', action='store_true', default=False,
                         help='Disable multispectral band display')
+    parser.add_argument('--enable-solar', action='store_true', default=False,
+                        help='Enable solar panel segmentation')
+    parser.add_argument('--tile-size', type=int, nargs=2, default=None,
+                        help='Tile resolution (width height). Use full native resolution if not specified. For SAM3 segmentation, use 2048 2048 or higher.')
 
     args = parser.parse_args()
 
@@ -191,12 +206,15 @@ def main():
         print(f"Using AOI: {aoi.name}")
         print(f"Bbox: {bbox}")
 
+    tile_size = tuple(args.tile_size) if args.tile_size else None
+
     print(f"\n{'='*60}")
     print(f"Satellite Monitoring")
     print(f"Bbox: {bbox}")
     print(f"Max cloud cover: {args.max_cloud_cover}%")
     print(f"VLM enabled: {args.enable_vlm}")
     print(f"Multispectral enabled: {not args.no_multispectral}")
+    print(f"Tile size: {tile_size if tile_size else 'Full native resolution'}")
     print(f"{'='*60}\n")
 
     download_and_process_latest(
@@ -204,9 +222,11 @@ def main():
         output_dir=args.output_dir,
         max_cloud_cover=args.max_cloud_cover,
         enable_vlm=args.enable_vlm,
+        enable_solar_segmentation=args.enable_solar,
         lookback_days=args.lookback_days,
         display=not args.no_display,
-        show_multispectral=not args.no_multispectral
+        show_multispectral=not args.no_multispectral,
+        tile_size=tile_size
     )
 
 
