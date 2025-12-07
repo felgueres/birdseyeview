@@ -1,10 +1,24 @@
+12/7/2025 There's active research off of Sentinel2.
+[SatClip](https://arxiv.org/pdf/2311.17179) seems interesting, it's general
+purpose location embeddings which means: text or img in -> emb out, ie. RAG,
+measure image differences. This is cool, maybe I should standup a UI to play
+with this: download randomnly sampled tiles, embed them, store in db, UI to map
+world map with tiles and a search box, click or search by text. Sentinel2 is 56K
+tiles, but 22K are land.
+
+Parcel tasks: extract parcel boundaries, land cover classification, crop type
+classifiers (using a timeseries of S2), veg indicators (NDVI, phenology,
+greenup, stress) which infers yield forecasts, change detection, crop
+management. Probably the least explored app is emb-based similar parcels
+finding.
+
 12/6/2025 Sentinel2 is a free open source satellite data by the EU. Getting
 tiles is easy, resolution is 10meters per pixel, commercial sats give you 1 or
 even less (insane). You can transform the data in many ways to make it easier to
 make inferences, and there's satellite specific models that work well for
 segmentation tasks. I think the simplest workflow is tracking change. Let a user
-define a parcel or polygon and run checks on every satellite pass: farmland,
-parking lots, stations, remote areas, construction sites, ports.
+define a parcel and run checks on every satellite pass: farmland, parking lots,
+stations, remote areas, construction sites, ports.
 
 Place a polygon, tell me what changed. Hill identified, climbing.
 
