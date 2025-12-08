@@ -1,3 +1,14 @@
+12/8/2025 Concretely, this is next:
+
+- Find a datacenter that is or recently was under construction
+- Get the timeseries of snapshots at highest quality
+- Run diff algo
+- Track progress
+
+Here's an idea: Track the datacenters that are under construction and about to
+come online. Call it GPUWIP. Make it public. Cooling tower, power draw, size,
+GPU count.
+
 12/7/2025 There's active research off of Sentinel2.
 [SatClip](https://arxiv.org/pdf/2311.17179) seems interesting, it's general
 purpose location embeddings which means: text/img in -> embedding out. This is

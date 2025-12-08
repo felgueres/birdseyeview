@@ -53,7 +53,9 @@ def download_and_process_latest(
     lookback_days: int = 30,
     display: bool = True,
     show_multispectral: bool = True,
-    tile_size: tuple = None
+    tile_size: tuple = None,
+    download_only: bool = False,
+    force_download: bool = False
 ) -> None:
     """
     Download latest imagery for bbox and process through pipeline.
@@ -67,6 +69,8 @@ def download_and_process_latest(
         display: Show live visualization window
         show_multispectral: Show multispectral bands alongside RGB
         tile_size: (width, height) for tile resolution. Use None for full native resolution.
+        download_only: If True, only download data without processing
+        force_download: If True, bypass cache and force fresh download
     """
     downloader = Sentinel2Downloader()
 
@@ -97,7 +101,7 @@ def download_and_process_latest(
     latest_tile = tiles[-1]
     print(f"Latest tile: {latest_tile}")
 
-    if show_multispectral:
+    if show_multispectral and not download_only:
         from bird.satellite.multispectral_viewer import MultispectralViewer
 
         print("\n" + "=" * 60)
@@ -126,21 +130,25 @@ def download_and_process_latest(
     tile_filename = f"{latest_tile.tile_id}_{latest_tile.date}.jpg"
     tile_path = tiles_dir / tile_filename
 
-    if tile_path.exists():
+    if tile_path.exists() and not force_download:
         print(f"\nUsing cached tile: {tile_path}")
         import cv2
         rgb = cv2.imread(str(tile_path))
         rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
     else:
+        if force_download and tile_path.exists():
+            print(f"\nForce download enabled, bypassing cache...")
+            tile_path.unlink()
         print(f"\nDownloading RGB tile to {tiles_dir}...")
+        print(f"Cropping to bbox: {bbox}")
         if tile_size is None:
             print("Using full native resolution (10980x10980 for full tile)")
-            rgb = downloader.download_tile(latest_tile, bands=['red', 'green', 'blue'])
+            rgb = downloader.download_tile(latest_tile, bands=['red', 'green', 'blue'], crop_bbox=bbox)
             if rgb is not None:
                 rgb = downloader._normalize_to_uint8(rgb)
         else:
             print(f"Using resolution: {tile_size}")
-            rgb = downloader.download_rgb_thumbnail(latest_tile, output_size=tile_size)
+            rgb = downloader.download_rgb_thumbnail(latest_tile, output_size=tile_size, crop_bbox=bbox)
 
         if rgb is None:
             print("Failed to download tile")
@@ -149,6 +157,12 @@ def download_and_process_latest(
         import cv2
         cv2.imwrite(str(tile_path), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
         print(f"Saved: {tile_path}")
+
+    if download_only:
+        print("\n" + "=" * 60)
+        print("Download complete (processing skipped)")
+        print(f"Data saved to: {tiles_dir}")
+        return
 
     print(f"\nProcessing through pipeline...")
     processor = TileBatchProcessor(
@@ -194,6 +208,10 @@ def main():
                         help='Enable solar panel segmentation')
     parser.add_argument('--tile-size', type=int, nargs=2, default=None,
                         help='Tile resolution (width height). Use full native resolution if not specified. For SAM3 segmentation, use 2048 2048 or higher.')
+    parser.add_argument('--download-only', action='store_true', default=False,
+                        help='Only download data without processing')
+    parser.add_argument('--force-download', action='store_true', default=False,
+                        help='Force fresh download, bypass cache')
 
     args = parser.parse_args()
 
@@ -226,7 +244,9 @@ def main():
         lookback_days=args.lookback_days,
         display=not args.no_display,
         show_multispectral=not args.no_multispectral,
-        tile_size=tile_size
+        tile_size=tile_size,
+        download_only=args.download_only,
+        force_download=args.force_download
     )
 
 

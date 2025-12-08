@@ -35,30 +35,23 @@ class AOI:
 
 
 AREAS_OF_INTEREST = {
-    "bay_area": AOI(
-        name="San Francisco Bay Area",
-        bbox=[-122.5, 37.2, -121.7, 37.9],
-        description="Dense urban, tech infrastructure, ports, diverse land use",
-        priority_event_types=["vegetation_change"]
+    "microsoft_fairwater": AOI(
+        name="Microsoft Fairwater AI Datacenter",
+        bbox=[-87.92, 42.66, -87.88, 42.69],
+        description="Microsoft hyperscale AI supercomputer campus (former Foxconn site), Mount Pleasant, WI. 315 acres, hundreds of thousands of Nvidia GB200/GB300 GPUs. Under construction, online early 2026.",
+        priority_event_types=["construction", "infrastructure", "cooling_systems", "substation"],
     ),
-    # 20.456915577634764, -100.07492154345282
-    "san_gil": AOI(
-        name="Mexico City",
-        bbox=[20.456915577634764, -100.07492154345282, 20.466915577634764, -100.06492154345282],
-        description="Urban, industrial, commercial, diverse land use",
-        priority_event_types=["vegetation_change"]
+    "meta_hyperion": AOI(
+        name="Meta Hyperion AI Campus",
+        bbox=[-91.80, 32.44, -91.70, 32.52],
+        description="Meta's largest datacenter (Hyperion), Franklin Farm megasite near Rayville, LA. 2,250 acres / 4M sq-ft for LLaMA/AI training, >2 GW compute. Multi-year construction through late 2020s.",
+        priority_event_types=["construction", "earthworks", "infrastructure", "utility_corridors"],
     ),
-    "topaz_solar": AOI(
-        name="Topaz Solar Farm - California",
-        bbox=[-120.10, 35.35, -120.02, 35.41],
-        description="Large-scale solar installation, 550MW capacity, 9M panels",
-        priority_event_types=["solar_panel_detection", "infrastructure_change"]
-    ),
-    "ivanpah_solar": AOI(
-        name="Ivanpah Solar Power Facility",
-        bbox=[-115.48, 35.53, -115.45, 35.56],
-        description="Concentrated solar thermal plant in Mojave Desert",
-        priority_event_types=["solar_panel_detection", "infrastructure_change"]
+    "rowan_cinco": AOI(
+        name="Rowan Digital Cinco Campus",
+        bbox=[-98.92, 29.24, -98.85, 29.30],
+        description="Rowan Digital 300 MW hyperscale AI campus, Medina County near Lytle, TX. 440 acres for top-5 tech company. Ground broken Aug 2025, initial 60 MW Q4 2025/2026, full build ~2027.",
+        priority_event_types=["construction", "grading", "infrastructure", "substation"],
     ),
 }
 

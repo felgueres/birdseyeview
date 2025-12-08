@@ -127,7 +127,8 @@ class Sentinel2Downloader:
         self,
         tile: Sentinel2Tile,
         bands: List[str] = ['red', 'green', 'blue'],
-        resolution: int = 10
+        resolution: int = 10,
+        crop_bbox: Optional[List[float]] = None
     ) -> Optional[np.ndarray]:
         """
         Download a Sentinel-2 tile.
@@ -137,6 +138,7 @@ class Sentinel2Downloader:
             bands: List of band names (default RGB: red, green, blue)
                    Available: red, green, blue, nir, swir16, swir22, coastal, etc.
             resolution: Spatial resolution in meters (10, 20, or 60)
+            crop_bbox: Optional [lon_min, lat_min, lon_max, lat_max] to crop to
 
         Returns:
             numpy array of shape (H, W, C) or None if download fails
@@ -151,6 +153,8 @@ class Sentinel2Downloader:
 
         band_arrays = []
         target_shape = None
+        window = None
+        transform = None
 
         for band in bands:
             if band not in tile.assets:
@@ -164,7 +168,28 @@ class Sentinel2Downloader:
 
             try:
                 with rasterio.open(band_url) as src:
-                    data = src.read(1)
+                    if crop_bbox is not None and window is None:
+                        from rasterio.windows import from_bounds
+                        from rasterio.warp import transform_bounds
+
+                        # Transform bbox from WGS84 to tile's CRS
+                        bbox_in_tile_crs = transform_bounds(
+                            'EPSG:4326',  # WGS84 lat/lon
+                            src.crs,      # Tile's CRS (usually UTM)
+                            *crop_bbox
+                        )
+                        print(f"Bbox in WGS84: {crop_bbox}")
+                        print(f"Bbox in tile CRS: {bbox_in_tile_crs}")
+                        print(f"Tile bounds: {src.bounds}")
+
+                        window = from_bounds(*bbox_in_tile_crs, transform=src.transform)
+                        transform = src.transform
+                        print(f"Window for crop: {window}")
+
+                    if window is not None:
+                        data = src.read(1, window=window)
+                    else:
+                        data = src.read(1)
 
                     if target_shape is None:
                         target_shape = data.shape
@@ -181,12 +206,21 @@ class Sentinel2Downloader:
             return None
 
         stacked = np.stack(band_arrays, axis=-1)
+        if crop_bbox is not None:
+            print(f"Cropped to bbox: {crop_bbox}")
+            print(f"Cropped image shape: {stacked.shape}")
+
+        if stacked.size == 0:
+            print("ERROR: Cropped image is empty. Check if bbox is within tile bounds.")
+            return None
+
         return stacked
 
     def download_rgb_thumbnail(
         self,
         tile: Sentinel2Tile,
-        output_size: Tuple[int, int] = (512, 512)
+        output_size: Tuple[int, int] = (512, 512),
+        crop_bbox: Optional[List[float]] = None
     ) -> Optional[np.ndarray]:
         """
         Download RGB thumbnail (fast preview).
@@ -194,6 +228,7 @@ class Sentinel2Downloader:
         Args:
             tile: Sentinel2Tile object
             output_size: (width, height) for output image
+            crop_bbox: Optional [lon_min, lat_min, lon_max, lat_max] to crop to
 
         Returns:
             RGB numpy array (H, W, 3) in 0-255 range
@@ -201,9 +236,9 @@ class Sentinel2Downloader:
         if 'visual' in tile.assets:
             visual_url = tile.assets['visual'].get('href')
             if visual_url:
-                return self._download_visual_thumbnail(visual_url, output_size)
+                return self._download_visual_thumbnail(visual_url, output_size, crop_bbox)
 
-        rgb = self.download_tile(tile, bands=['red', 'green', 'blue'])
+        rgb = self.download_tile(tile, bands=['red', 'green', 'blue'], crop_bbox=crop_bbox)
         if rgb is None:
             return None
 
@@ -216,7 +251,8 @@ class Sentinel2Downloader:
     def _download_visual_thumbnail(
         self,
         url: str,
-        output_size: Tuple[int, int]
+        output_size: Tuple[int, int],
+        crop_bbox: Optional[List[float]] = None
     ) -> Optional[np.ndarray]:
         """Download pre-rendered visual thumbnail."""
         try:
@@ -224,7 +260,21 @@ class Sentinel2Downloader:
             import cv2
 
             with rasterio.open(url) as src:
-                data = src.read([1, 2, 3])
+                if crop_bbox is not None:
+                    from rasterio.windows import from_bounds
+                    from rasterio.warp import transform_bounds
+
+                    # Transform bbox from WGS84 to tile's CRS
+                    bbox_in_tile_crs = transform_bounds(
+                        'EPSG:4326',
+                        src.crs,
+                        *crop_bbox
+                    )
+                    window = from_bounds(*bbox_in_tile_crs, transform=src.transform)
+                    data = src.read([1, 2, 3], window=window)
+                    print(f"Cropped to bbox: {crop_bbox}")
+                else:
+                    data = src.read([1, 2, 3])
                 data = np.transpose(data, (1, 2, 0))
 
             data = self._normalize_to_uint8(data)
@@ -236,6 +286,10 @@ class Sentinel2Downloader:
 
     def _normalize_to_uint8(self, data: np.ndarray) -> np.ndarray:
         """Normalize to 0-255 uint8 range with basic contrast stretch."""
+        if data.size == 0:
+            print("ERROR: Cannot normalize empty array")
+            return data
+
         data = data.astype(np.float32)
 
         p2, p98 = np.percentile(data, (2, 98))
