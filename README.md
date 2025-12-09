@@ -1,14 +1,19 @@
-# Vision
+This project is a collection of tools to experiment with AI video understanding.
 
-This project builds tools to experiment with the latest in video understanding.
+Examples:
 
-Some cool end goals could be:
-
-- Fast video search and retrieval
-- Video tools to handoff to LLMs
+1. Segmentation on video
 
 <picture> 
   <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px""> 
+</picture>
+
+2. Tracking change on sat data, here's a hyperscaler datacenter under
+   construction.
+
+<picture> 
+  <img alt="interactive ui demo" src="/docs/microsoft_fairwater.gif"
+width="250px""> 
 </picture>
 
 | Tasks                 | Description                                                                                       | Implemented |

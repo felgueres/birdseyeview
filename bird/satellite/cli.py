@@ -7,7 +7,12 @@ import cv2
 
 from bird.satellite.sentinel2 import Sentinel2Downloader
 from bird.satellite.aoi import get_aoi
-from bird.satellite.process_tiles_batch import TileBatchProcessor
+from bird.satellite.transforms import SatelliteChangeDetectionTransform
+from bird.core.transforms import EventSerializationTransform
+from bird.events.database import EventDatabase
+from bird.events.embedder import EventEmbedder
+from bird.events.writer import EventWriter
+from bird.core.dag import DAG
 
 load_dotenv()
 
@@ -128,48 +133,118 @@ def download_command(
 
 def process_command(
     tiles_dir: str,
+    bbox: List[float],
     output_dir: str,
-    enable_vlm: bool = False,
+    enable_embeddings: bool = True,
     display: bool = False
 ) -> None:
     """
-    Process downloaded satellite tiles.
+    Process downloaded satellite tiles through DAG pipeline.
 
     Args:
         tiles_dir: Directory containing downloaded tiles
+        bbox: Bounding box for geo-referencing
         output_dir: Where to save processing results
-        enable_vlm: Enable VLM analysis
+        enable_embeddings: Enable embedding generation for semantic search
         display: Show live visualization window
     """
     tiles_path = Path(tiles_dir)
-    if not tiles_path.exists() or not list(tiles_path.glob('*.jpg')):
+    tile_files = sorted(tiles_path.glob('*.jpg'))
+
+    if not tile_files:
         print(f"No tiles found in {tiles_dir}")
         return
 
     print(f"{'='*60}")
-    print(f"Processing Satellite Tiles")
+    print(f"Processing Satellite Time Series")
     print(f"Tiles directory: {tiles_dir}")
     print(f"Output directory: {output_dir}")
-    print(f"VLM enabled: {enable_vlm}")
+    print(f"Bbox: {bbox}")
+    print(f"Embeddings enabled: {enable_embeddings}")
+    print(f"Total frames: {len(tile_files)}")
     print(f"{'='*60}\n")
 
-    processor = TileBatchProcessor(
-        tiles_dir=str(tiles_dir),
-        session_dir=output_dir,
-        enable_embeddings=True,
-        enable_vlm=enable_vlm,
-    )
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    db = EventDatabase(session_dir=output_dir)
+    writer = EventWriter(session_dir=output_dir, enable_database=True, enable_embeddings=enable_embeddings)
+
+    transforms = [
+        SatelliteChangeDetectionTransform(
+            threshold=0.15,
+            min_change_area=100
+        ),
+        EventSerializationTransform(serializer=writer)
+    ]
+
+    dag = DAG(transforms)
+
+    print(f"Processing {len(tile_files)} frames through DAG...")
+    print("-" * 60)
 
     if display:
-        processor.process_tiles_with_display(save_annotations=True)
-    else:
-        processor.process_tiles(save_annotations=True)
+        print("\nPress 'q' to quit, any other key to continue to next frame\n")
 
-    print(f"\n{'='*60}")
-    print(f"Processing complete")
-    print(f"Results saved to: {processor.session_dir}")
-    print(f"Annotated tiles: {processor.results_dir}")
+    for frame_idx, tile_file in enumerate(tile_files):
+        print(f"\nFrame {frame_idx}: {tile_file.name}")
+
+        frame = cv2.imread(str(tile_file))
+        if frame is None:
+            print(f"  Failed to load, skipping")
+            continue
+
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        state = {
+            "frame": frame_rgb,
+            "frame_count": frame_idx,
+            "timestamp": float(frame_idx)
+        }
+
+        try:
+            result = dag.forward(state)
+
+            events = result.get("events", [])
+            if events:
+                print(f"  Events detected: {len(events)}")
+                for event in events[:3]:
+                    print(f"    - {event['type']}: conf={event['confidence']:.2f}")
+
+            change_mag = result.get("change_magnitude", 0)
+            if change_mag > 0.01:
+                print(f"  Change magnitude: {change_mag:.3f}")
+
+            if display:
+                display_frame = result.get("frame", frame_rgb)
+                cv2.imshow("Satellite Time Series", cv2.cvtColor(display_frame, cv2.COLOR_RGB2BGR))
+
+                key = cv2.waitKey(0)
+                if key == ord('q'):
+                    print("\nStopping...")
+                    break
+
+        except Exception as e:
+            print(f"  Error processing: {e}")
+            continue
+
+    if display:
+        cv2.destroyAllWindows()
+
+    print("\n" + "=" * 60)
+    print("RESULTS")
+    print("=" * 60)
+
+    stats = db.get_event_statistics()
+    print(f"\nTotal events detected: {stats['total_events']}")
+    print(f"Event types:")
+    for event_type, count in stats['by_type'].items():
+        print(f"  {event_type}: {count}")
+
+    print(f"\nSession saved to: {output_dir}")
+    print(f"Database: {output_dir}/events.db")
     print(f"{'='*60}")
+
 
 def main():
     """BirdView Satellite CLI"""
@@ -182,8 +257,8 @@ def main():
                                  help='Area of interest name')
     download_parser.add_argument('--bbox', type=float, nargs=4, default=None,
                                  help='Custom bounding box: lon_min lat_min lon_max lat_max')
-    download_parser.add_argument('--output-dir', type=str, default='./data/satellite/tiles',
-                                 help='Output directory (default: ./data/satellite/tiles)')
+    download_parser.add_argument('--output-dir', type=str, default=None,
+                                 help='Output directory (default: ./data/satellite/<aoi_name>)')
     download_parser.add_argument('--start-date', type=str, default='2024-01-01',
                                  help='Start date YYYY-MM-DD (default: 2024-01-01)')
     download_parser.add_argument('--end-date', type=str, default='2025-12-31',
@@ -195,13 +270,17 @@ def main():
     download_parser.add_argument('--bands', type=str, nargs='+', default=None,
                                  help='Bands to download (e.g., red green blue nir swir16 swir22). Defaults to RGB (red green blue).')
 
-    process_parser = subparsers.add_parser('process', help='Process downloaded tiles')
-    process_parser.add_argument('--tiles-dir', type=str, required=True,
-                               help='Directory containing downloaded tiles')
-    process_parser.add_argument('--output-dir', type=str, default='./data/satellite/processed',
-                               help='Output directory (default: ./data/satellite/processed)')
-    process_parser.add_argument('--enable-vlm', action='store_true', default=False,
-                               help='Enable VLM analysis (requires OpenAI_API_KEY in .env)')
+    process_parser = subparsers.add_parser('process', help='Process downloaded tiles through DAG')
+    process_parser.add_argument('--aoi', type=str, default='microsoft_fairwater',
+                               help='Area of interest name (must match download AOI)')
+    process_parser.add_argument('--bbox', type=float, nargs=4, default=None,
+                               help='Custom bounding box: lon_min lat_min lon_max lat_max')
+    process_parser.add_argument('--tiles-dir', type=str, default=None,
+                               help='Directory containing downloaded tiles (default: ./data/satellite/<aoi_name>)')
+    process_parser.add_argument('--output-dir', type=str, default=None,
+                               help='Output directory (default: ./data/satellite/<aoi_name>_processed)')
+    process_parser.add_argument('--no-embeddings', action='store_true', default=False,
+                               help='Disable embedding generation')
     process_parser.add_argument('--display', action='store_true', default=False,
                                help='Show live visualization window')
 
@@ -214,17 +293,20 @@ def main():
     if args.command == 'download':
         if args.bbox:
             bbox = args.bbox
+            aoi_name = "custom"
             print(f"Using custom bbox: {bbox}")
         else:
             aoi = get_aoi(args.aoi)
             bbox = aoi.bbox
+            aoi_name = args.aoi
             print(f"Using AOI: {aoi.name}")
 
+        output_dir = args.output_dir if args.output_dir else f"./data/satellite/{aoi_name}"
         tile_size = tuple(args.tile_size) if args.tile_size else None
 
         download_command(
             bbox=bbox,
-            output_dir=args.output_dir,
+            output_dir=output_dir,
             start_date=args.start_date,
             end_date=args.end_date,
             max_cloud_cover=args.max_cloud_cover,
@@ -233,11 +315,24 @@ def main():
         )
 
     elif args.command == 'process':
+        if args.bbox:
+            bbox = args.bbox
+            aoi_name = "custom"
+            print(f"Using custom bbox: {bbox}")
+        else:
+            aoi = get_aoi(args.aoi)
+            bbox = aoi.bbox
+            aoi_name = args.aoi
+            print(f"Using AOI: {aoi.name}")
+
+        tiles_dir = args.tiles_dir if args.tiles_dir else f"./data/satellite/{aoi_name}"
+        output_dir = args.output_dir if args.output_dir else f"./data/satellite/{aoi_name}_processed"
+
         process_command(
-            tiles_dir=args.tiles_dir,
-            output_dir=args.output_dir,
-            enable_vlm=args.enable_vlm,
-            enable_solar=args.enable_solar,
+            tiles_dir=tiles_dir,
+            bbox=bbox,
+            output_dir=output_dir,
+            enable_embeddings=not args.no_embeddings,
             display=args.display
         )
 

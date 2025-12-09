@@ -13,10 +13,8 @@ python3 -m bird.satellite.cli download --aoi microsoft_fairwater --start-date 20
 ```
 
 ```bash
-python3 -m bird.satellite.multispectral_viewer \
-  --aoi bay_area \
-  --tile-size 512 \
-  --bands rgb nir swir16 swir22
+# To run dag processing on the timeseries tile
+python3 -m bird.satellite.cli process --aoi microsoft_fairwater --display
 ```
 
 <picture> 
