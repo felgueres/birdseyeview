@@ -178,24 +178,19 @@ class TileBatchProcessor:
         session_dir: str = "./tile_analysis_sessions",
         enable_embeddings: bool = True,
         enable_vlm: bool = True,
-        enable_solar_segmentation: bool = False
     ):
         self.tiles_dir = Path(tiles_dir)
         self.session_name = self.tiles_dir.name
         self.session_dir = Path(session_dir) / self.session_name
         self.session_dir.mkdir(parents=True, exist_ok=True)
-
         self.writer = EventWriter(
             session_dir=str(self.session_dir),
             enable_database=True,
             enable_embeddings=enable_embeddings
         )
         self.db = self.writer.database
-
         self.enable_vlm = enable_vlm
-        self.enable_solar_segmentation = enable_solar_segmentation
         self.dag = self._build_dag()
-
         self.results_dir = self.session_dir / "annotated_tiles"
         self.results_dir.mkdir(exist_ok=True)
 
@@ -211,17 +206,6 @@ class TileBatchProcessor:
                 run_every_n_frames=1
             )
         ]
-
-        if self.enable_solar_segmentation:
-            transforms.extend([
-                SolarPanelSegmentationTransform(
-                    run_every_n_frames=1
-                ),
-                SolarInstallationEventTransform(
-                    min_coverage_pct=5.0,
-                    run_every_n_frames=1
-                )
-            ])
 
         if self.enable_vlm:
             transforms.append(TileVLMTransform(run_every_n_frames=1))

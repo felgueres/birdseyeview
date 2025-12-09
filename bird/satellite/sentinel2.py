@@ -154,7 +154,6 @@ class Sentinel2Downloader:
         band_arrays = []
         target_shape = None
         window = None
-        transform = None
 
         for band in bands:
             if band not in tile.assets:
@@ -183,7 +182,6 @@ class Sentinel2Downloader:
                         print(f"Tile bounds: {src.bounds}")
 
                         window = from_bounds(*bbox_in_tile_crs, transform=src.transform)
-                        transform = src.transform
                         print(f"Window for crop: {window}")
 
                     if window is not None:

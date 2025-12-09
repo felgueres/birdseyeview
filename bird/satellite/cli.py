@@ -17,7 +17,8 @@ def download_command(
     start_date: str = "2024-01-01",
     end_date: str = "2025-12-31",
     max_cloud_cover: float = 20,
-    tile_size: tuple = None
+    tile_size: tuple = None,
+    bands: List[str] = None
 ) -> None:
     """
     Download satellite imagery for date range.
@@ -29,7 +30,11 @@ def download_command(
         end_date: End date in YYYY-MM-DD format
         max_cloud_cover: Maximum cloud cover percentage
         tile_size: (width, height) for tile resolution. Use None for full native resolution.
+        bands: List of bands to download (e.g., ['red', 'green', 'blue', 'nir']).
+               Defaults to RGB.
     """
+    bands = ['red', 'green', 'blue'] if bands is None else bands
+
     downloader = Sentinel2Downloader()
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -43,6 +48,7 @@ def download_command(
     print(f"Date range: {start_date} to {end_date}")
     print(f"Max cloud cover: {max_cloud_cover}%")
     print(f"Tile size: {tile_size if tile_size else 'Full native resolution'}")
+    print(f"Bands: {', '.join(bands)}")
     print(f"{'='*60}\n")
 
     downloaded_count = 0
@@ -86,17 +92,26 @@ def download_command(
                 print(f"  Downloading...")
 
                 if tile_size is None:
-                    rgb = downloader.download_tile(best_tile, bands=['red', 'green', 'blue'], crop_bbox=bbox)
-                    if rgb is not None:
-                        rgb = downloader._normalize_to_uint8(rgb)
+                    img = downloader.download_tile(best_tile, bands=bands, crop_bbox=bbox)
+                    if img is not None:
+                        img = downloader._normalize_to_uint8(img)
                 else:
-                    rgb = downloader.download_rgb_thumbnail(best_tile, output_size=tile_size, crop_bbox=bbox)
+                    if bands == ['red', 'green', 'blue']:
+                        img = downloader.download_rgb_thumbnail(best_tile, output_size=tile_size, crop_bbox=bbox)
+                    else:
+                        img = downloader.download_tile(best_tile, bands=bands, crop_bbox=bbox)
+                        if img is not None:
+                            img = downloader._normalize_to_uint8(img)
+                            img = cv2.resize(img, tile_size)
 
-                if rgb is None:
+                if img is None:
                     print(f"  Failed to download")
                     skipped_count += 1
                 else:
-                    cv2.imwrite(str(tile_path), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+                    if len(img.shape) == 3 and img.shape[2] == 3:
+                        cv2.imwrite(str(tile_path), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+                    else:
+                        cv2.imwrite(str(tile_path), img)
                     print(f"  Saved: {tile_path.name}")
                     downloaded_count += 1
 
@@ -115,7 +130,6 @@ def process_command(
     tiles_dir: str,
     output_dir: str,
     enable_vlm: bool = False,
-    enable_solar: bool = False,
     display: bool = False
 ) -> None:
     """
@@ -125,7 +139,6 @@ def process_command(
         tiles_dir: Directory containing downloaded tiles
         output_dir: Where to save processing results
         enable_vlm: Enable VLM analysis
-        enable_solar: Enable solar panel segmentation
         display: Show live visualization window
     """
     tiles_path = Path(tiles_dir)
@@ -138,7 +151,6 @@ def process_command(
     print(f"Tiles directory: {tiles_dir}")
     print(f"Output directory: {output_dir}")
     print(f"VLM enabled: {enable_vlm}")
-    print(f"Solar segmentation: {enable_solar}")
     print(f"{'='*60}\n")
 
     processor = TileBatchProcessor(
@@ -146,7 +158,6 @@ def process_command(
         session_dir=output_dir,
         enable_embeddings=True,
         enable_vlm=enable_vlm,
-        enable_solar_segmentation=enable_solar
     )
 
     if display:
@@ -181,6 +192,8 @@ def main():
                                  help='Maximum cloud cover percentage (default: 20)')
     download_parser.add_argument('--tile-size', type=int, nargs=2, default=None,
                                  help='Tile resolution (width height). Defaults to full native resolution.')
+    download_parser.add_argument('--bands', type=str, nargs='+', default=None,
+                                 help='Bands to download (e.g., red green blue nir swir16 swir22). Defaults to RGB (red green blue).')
 
     process_parser = subparsers.add_parser('process', help='Process downloaded tiles')
     process_parser.add_argument('--tiles-dir', type=str, required=True,
@@ -189,8 +202,6 @@ def main():
                                help='Output directory (default: ./data/satellite/processed)')
     process_parser.add_argument('--enable-vlm', action='store_true', default=False,
                                help='Enable VLM analysis (requires OpenAI_API_KEY in .env)')
-    process_parser.add_argument('--enable-solar', action='store_true', default=False,
-                               help='Enable solar panel segmentation')
     process_parser.add_argument('--display', action='store_true', default=False,
                                help='Show live visualization window')
 
@@ -217,7 +228,8 @@ def main():
             start_date=args.start_date,
             end_date=args.end_date,
             max_cloud_cover=args.max_cloud_cover,
-            tile_size=tile_size
+            tile_size=tile_size,
+            bands=args.bands
         )
 
     elif args.command == 'process':

@@ -75,4 +75,3 @@ if __name__ == "__main__":
         print(f"  Bbox: {aoi.bbox}")
         print(f"  Area: {aoi.area_km2():.1f} km²")
         print(f"  Priority events: {', '.join(aoi.priority_event_types)}")
-        print()
