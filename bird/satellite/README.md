@@ -1,8 +1,16 @@
-## Spectral tasks
+## Sat
 
-<picture> 
-  <img alt="spectral" src="/docs/multispectral.jpg"> 
-</picture>
+Satellite data is low frame rate, high information density. This folder has
+utils to download frames from Sentinel2, which is part of the Copernicus
+European space program. Sentinel2 has 10m / pixel resolution on RGB and
+different res for the other 10 spectral bands. Data goes back to 2015. One RGB
+earth-pass is 22K tiles, 55MB/tile, ~1TB. So a single band is 333GB. Sentinel-2
+has 13 bands, rough aprox 4.3TB/earth-pass on all bands.
+
+```bash
+# To download, set an aoi in aoi.py and run for a timerange
+python3 -m bird.satellite.cli download --aoi microsoft_fairwater --start-date 2024-01-01 --end-date 2024-12-31
+```
 
 ```bash
 python3 -m bird.satellite.multispectral_viewer \
@@ -11,8 +19,9 @@ python3 -m bird.satellite.multispectral_viewer \
   --bands rgb nir swir16 swir22
 ```
 
-One RGB earth-pass is 22K tiles, 55MB/tile, ~1TB. So a single band is 333GB.
-Sentinel-2 has 13 bands, 4.3TB/earth-pass multispectral at 10m/pixel resolution.
+<picture> 
+  <img alt="spectral" src="/docs/multispectral.jpg"> 
+</picture>
 
 | Band | Name (Meaning)                                                                                 | Wavelength (nm) | Resolution | Use                       |
 | ---- | ---------------------------------------------------------------------------------------------- | --------------- | ---------- | ------------------------- |
