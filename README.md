@@ -1,4 +1,4 @@
-This project is a collection of tools to experiment with AI video understanding.
+This project builds tools for AI video understanding.
 
 Examples:
 
@@ -12,8 +12,7 @@ Examples:
    construction.
 
 <picture> 
-  <img alt="interactive ui demo" src="/docs/microsoft_fairwater.gif"
-width="250px""> 
+  <img alt="interactive ui demo" src="/docs/fairwater.gif" width="450px""> 
 </picture>
 
 | Tasks                 | Description                                                                                       | Implemented |

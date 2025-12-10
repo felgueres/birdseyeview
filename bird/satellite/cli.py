@@ -4,10 +4,15 @@ from typing import List
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import cv2
+import numpy as np
 
 from bird.satellite.sentinel2 import Sentinel2Downloader
 from bird.satellite.aoi import get_aoi
-from bird.satellite.transforms import SatelliteChangeDetectionTransform
+from bird.satellite.create_timeseries_gif import create_gif_from_tiles
+from bird.satellite.transforms import (
+    RadiometricPreprocessTransform,
+    BitemporalChangeSegmentationTransform
+)
 from bird.core.transforms import EventSerializationTransform
 from bird.events.database import EventDatabase
 from bird.events.embedder import EventEmbedder
@@ -15,6 +20,80 @@ from bird.events.writer import EventWriter
 from bird.core.dag import DAG
 
 load_dotenv()
+
+
+def _detect_snow(frame: np.ndarray, threshold: float = 0.6) -> tuple[bool, float]:
+    """
+    Detect if image is covered with snow.
+
+    Snow detection heuristics:
+    - High brightness (RGB values all high)
+    - Low color variance (all channels similar)
+    - High percentage of bright pixels
+    """
+    if frame.dtype == np.uint8:
+        frame_float = frame.astype(np.float32) / 255.0
+    else:
+        frame_float = frame
+
+    brightness = np.mean(frame_float)
+
+    r, g, b = frame_float[:, :, 0], frame_float[:, :, 1], frame_float[:, :, 2]
+    color_variance = np.mean(np.abs(r - g) + np.abs(g - b) + np.abs(r - b))
+
+    bright_pixels = np.sum((frame_float > 0.7).all(axis=2))
+    bright_percentage = bright_pixels / (frame_float.shape[0] * frame_float.shape[1])
+
+    snow_score = (brightness * 0.4) + ((1.0 - color_variance) * 0.3) + (bright_percentage * 0.3)
+
+    is_snow = snow_score > threshold
+
+    return is_snow, snow_score
+
+
+def _visualize_change_mask(frame_before: np.ndarray, frame_after: np.ndarray, change_mask: np.ndarray) -> np.ndarray:
+    """Create before/after/diff visualization."""
+    if change_mask is None or frame_before is None:
+        return frame_after.copy()
+
+    overlay = frame_after.copy()
+    change_overlay = np.zeros_like(frame_after)
+    change_overlay[change_mask > 0] = [255, 0, 0]
+
+    alpha = 0.5
+    diff_viz = cv2.addWeighted(overlay, 1 - alpha, change_overlay, alpha, 0)
+
+    cv2.putText(diff_viz, "Change", (10, 20),
+               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+
+    return diff_viz
+
+
+def _create_panel_display(panels: List[np.ndarray], frame_idx: int, filename: str) -> np.ndarray:
+    """Create multi-panel display from visualization panels (horizontal layout)."""
+    if not panels:
+        return np.zeros((100, 100, 3), dtype=np.uint8)
+
+    target_height = 400
+    resized_panels = []
+    for panel in panels:
+        h, w = panel.shape[:2]
+        scale = target_height / h
+        new_w = int(w * scale)
+        resized = cv2.resize(panel, (new_w, target_height))
+        resized_panels.append(resized)
+
+    combined = np.hstack(resized_panels)
+
+    header_height = 40
+    header = np.zeros((header_height, combined.shape[1], 3), dtype=np.uint8)
+
+    cv2.putText(header, f"Frame {frame_idx}: {filename}", (10, 25),
+               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+
+    final = np.vstack([header, combined])
+
+    return final
 
 def download_command(
     bbox: List[float],
@@ -136,7 +215,9 @@ def process_command(
     bbox: List[float],
     output_dir: str,
     enable_embeddings: bool = True,
-    display: bool = False
+    display: bool = False,
+    save_viz_frames: bool = False,
+    create_gif: bool = False
 ) -> None:
     """
     Process downloaded satellite tiles through DAG pipeline.
@@ -167,13 +248,23 @@ def process_command(
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
+    viz_frames_dir = None
+    if save_viz_frames:
+        viz_frames_dir = output_path / "viz_frames"
+        viz_frames_dir.mkdir(exist_ok=True)
+
     db = EventDatabase(session_dir=output_dir)
     writer = EventWriter(session_dir=output_dir, enable_database=True, enable_embeddings=enable_embeddings)
 
     transforms = [
-        SatelliteChangeDetectionTransform(
+        RadiometricPreprocessTransform(
+            add_indices=True,
+            normalize=True
+        ),
+        BitemporalChangeSegmentationTransform(
             threshold=0.15,
-            min_change_area=100
+            min_change_area=100,
+            use_indices=True
         ),
         EventSerializationTransform(serializer=writer)
     ]
@@ -186,6 +277,8 @@ def process_command(
     if display:
         print("\nPress 'q' to quit, any other key to continue to next frame\n")
 
+    skipped_snow = 0
+
     for frame_idx, tile_file in enumerate(tile_files):
         print(f"\nFrame {frame_idx}: {tile_file.name}")
 
@@ -195,6 +288,12 @@ def process_command(
             continue
 
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        is_snow, snow_score = _detect_snow(frame_rgb, threshold=0.6)
+        if is_snow:
+            print(f"  Snow detected (score={snow_score:.3f}), skipping")
+            skipped_snow += 1
+            continue
 
         state = {
             "frame": frame_rgb,
@@ -206,26 +305,61 @@ def process_command(
             result = dag.forward(state)
 
             events = result.get("events", [])
-            if events:
-                print(f"  Events detected: {len(events)}")
-                for event in events[:3]:
+            progress_events = result.get("progress_events", [])
+            all_events = events + progress_events
+
+            if all_events:
+                print(f"  Events detected: {len(all_events)}")
+                for event in all_events[:5]:
                     print(f"    - {event['type']}: conf={event['confidence']:.2f}")
 
             change_mag = result.get("change_magnitude", 0)
             if change_mag > 0.01:
                 print(f"  Change magnitude: {change_mag:.3f}")
 
-            if display:
-                display_frame = result.get("frame", frame_rgb)
-                cv2.imshow("Satellite Time Series", cv2.cvtColor(display_frame, cv2.COLOR_RGB2BGR))
+            if display or save_viz_frames:
+                change_mask = result.get("change_mask")
+                previous_frame = result.get("previous_frame_viz")
 
-                key = cv2.waitKey(0)
-                if key == ord('q'):
-                    print("\nStopping...")
-                    break
+                if previous_frame is not None:
+                    viz_panels = []
+
+                    before_panel = previous_frame.copy()
+                    cv2.putText(before_panel, "Before", (10, 20),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+                    viz_panels.append(before_panel)
+
+                    after_panel = frame_rgb.copy()
+                    cv2.putText(after_panel, "After", (10, 20),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+                    viz_panels.append(after_panel)
+
+                    if change_mask is not None:
+                        change_viz = _visualize_change_mask(previous_frame, frame_rgb, change_mask)
+                        viz_panels.append(change_viz)
+
+                    combined = _create_panel_display(viz_panels, frame_idx, tile_file.name)
+
+                    if save_viz_frames and viz_frames_dir is not None:
+                        date_str = tile_file.stem.split('_')[0]
+                        viz_filename = f"{date_str}_{frame_idx:04d}_viz.jpg"
+                        viz_path = viz_frames_dir / viz_filename
+                        combined_bgr = cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
+                        cv2.imwrite(str(viz_path), combined_bgr)
+
+                    if display:
+                        combined_bgr = cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
+                        cv2.imshow("Satellite Construction Monitoring", combined_bgr)
+
+                        key = cv2.waitKey(0)
+                        if key == ord('q'):
+                            print("\nStopping...")
+                            break
 
         except Exception as e:
             print(f"  Error processing: {e}")
+            import traceback
+            traceback.print_exc()
             continue
 
     if display:
@@ -241,8 +375,32 @@ def process_command(
     for event_type, count in stats['by_type'].items():
         print(f"  {event_type}: {count}")
 
+    print(f"\nProcessing summary:")
+    print(f"  Total frames: {len(tile_files)}")
+    print(f"  Skipped (snow): {skipped_snow}")
+    print(f"  Processed: {len(tile_files) - skipped_snow}")
+
     print(f"\nSession saved to: {output_dir}")
     print(f"Database: {output_dir}/events.db")
+
+    if save_viz_frames and viz_frames_dir is not None:
+        viz_frame_files = sorted(viz_frames_dir.glob('*.jpg'))
+        print(f"\nVisualization frames saved: {len(viz_frame_files)}")
+        print(f"Viz frames directory: {viz_frames_dir}")
+
+        if create_gif and len(viz_frame_files) > 0:
+            gif_path = output_path / "satellite_analysis.gif"
+            print(f"\nCreating GIF from visualization frames...")
+
+            create_gif_from_tiles(
+                tiles_dir=str(viz_frames_dir),
+                output_path=str(gif_path),
+                duration=500,
+                add_date_labels=False,
+                loop=0,
+                resize_width=None
+            )
+
     print(f"{'='*60}")
 
 
@@ -283,6 +441,10 @@ def main():
                                help='Disable embedding generation')
     process_parser.add_argument('--display', action='store_true', default=False,
                                help='Show live visualization window')
+    process_parser.add_argument('--save-viz-frames', action='store_true', default=False,
+                               help='Save visualization frames to create GIF later')
+    process_parser.add_argument('--create-gif', action='store_true', default=False,
+                               help='Automatically create GIF after processing (requires --save-viz-frames)')
 
     args = parser.parse_args()
 
@@ -333,7 +495,9 @@ def main():
             bbox=bbox,
             output_dir=output_dir,
             enable_embeddings=not args.no_embeddings,
-            display=args.display
+            display=args.display,
+            save_viz_frames=args.save_viz_frames,
+            create_gif=args.create_gif
         )
 
 
