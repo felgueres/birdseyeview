@@ -15,7 +15,6 @@ from bird.satellite.transforms import (
 )
 from bird.core.transforms import EventSerializationTransform
 from bird.events.database import EventDatabase
-from bird.events.embedder import EventEmbedder
 from bird.events.writer import EventWriter
 from bird.core.dag import DAG
 
@@ -395,7 +394,7 @@ def process_command(
             create_gif_from_tiles(
                 tiles_dir=str(viz_frames_dir),
                 output_path=str(gif_path),
-                duration=500,
+                duration=2000,
                 add_date_labels=False,
                 loop=0,
                 resize_width=None

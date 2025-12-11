@@ -2,14 +2,13 @@ This project builds tools for AI video understanding.
 
 Examples:
 
-1. Segmentation on video
+1. Segmenting physical assets on video
 
 <picture> 
   <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px""> 
 </picture>
 
-2. Tracking change on sat data, here's a hyperscaler datacenter under
-   construction.
+2. Change detection, here's a hyperscaler datacenter under construction.
 
 <picture> 
   <img alt="interactive ui demo" src="/docs/fairwater.gif" width="450px""> 
