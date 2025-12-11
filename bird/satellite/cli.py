@@ -13,6 +13,7 @@ from bird.satellite.transforms import (
     RadiometricPreprocessTransform,
     BitemporalChangeSegmentationTransform
 )
+from bird.satellite.narration import VLLMNarrator
 from bird.core.transforms import EventSerializationTransform
 from bird.events.database import EventDatabase
 from bird.events.writer import EventWriter
@@ -216,7 +217,11 @@ def process_command(
     enable_embeddings: bool = True,
     display: bool = False,
     save_viz_frames: bool = False,
-    create_gif: bool = False
+    create_gif: bool = False,
+    enable_narration: bool = False,
+    narration_model: str = "gemini-2.5-flash",
+    narration_batch_size: int = 4,
+    narration_max_frames: int = 4
 ) -> None:
     """
     Process downloaded satellite tiles through DAG pipeline.
@@ -227,6 +232,12 @@ def process_command(
         output_dir: Where to save processing results
         enable_embeddings: Enable embedding generation for semantic search
         display: Show live visualization window
+        save_viz_frames: Save visualization frames
+        create_gif: Create GIF from visualization frames
+        enable_narration: Enable VLLM narration of the sequence
+        narration_model: Model to use for narration
+        narration_batch_size: Number of frames per batch for narration
+        narration_max_frames: Maximum frames to use for narration (evenly spaced)
     """
     tiles_path = Path(tiles_dir)
     tile_files = sorted(tiles_path.glob('*.jpg'))
@@ -400,6 +411,24 @@ def process_command(
                 resize_width=None
             )
 
+    if enable_narration:
+        print(f"\nGenerating VLLM narration...")
+        try:
+            narrator = VLLMNarrator(model=narration_model)
+            narrative = narrator.narrate_sequence(
+                frame_paths=tile_files,
+                batch_size=narration_batch_size,
+                max_frames=narration_max_frames
+            )
+
+            narrative_path = output_path / "narrative.txt"
+            narrator.save_narrative(narrative, narrative_path)
+
+        except Exception as e:
+            print(f"\nError generating narration: {e}")
+            import traceback
+            traceback.print_exc()
+
     print(f"{'='*60}")
 
 
@@ -444,6 +473,14 @@ def main():
                                help='Save visualization frames to create GIF later')
     process_parser.add_argument('--create-gif', action='store_true', default=False,
                                help='Automatically create GIF after processing (requires --save-viz-frames)')
+    process_parser.add_argument('--narrate', action='store_true', default=False,
+                               help='Generate VLLM narration of the image sequence')
+    process_parser.add_argument('--narration-model', type=str, default='gemini-2.5-flash',
+                               help='Model to use for narration (default: gemini-2.5-flash, options: gemini-3-pro-preview, gemini-2.5-pro, gemini-2.5-flash)')
+    process_parser.add_argument('--narration-batch-size', type=int, default=4,
+                               help='Number of frames to process per narration batch (default: 4)')
+    process_parser.add_argument('--narration-max-frames', type=int, default=4,
+                               help='Maximum number of frames to use for narration, evenly spaced (default: 4)')
 
     args = parser.parse_args()
 
@@ -496,7 +533,11 @@ def main():
             enable_embeddings=not args.no_embeddings,
             display=args.display,
             save_viz_frames=args.save_viz_frames,
-            create_gif=args.create_gif
+            create_gif=args.create_gif,
+            enable_narration=args.narrate,
+            narration_model=args.narration_model,
+            narration_batch_size=args.narration_batch_size,
+            narration_max_frames=args.narration_max_frames
         )
 
 

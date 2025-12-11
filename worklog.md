@@ -1,4 +1,7 @@
-12/8/2025 Concretely, this is next:
+12/11/2025 I can go from geometry to analyzed frames quickly now. Adding
+narration, gemini is super good at this.
+
+12/8/2025 Next:
 
 - Find a datacenter that is or recently was under construction
 - Get the timeseries of snapshots at highest quality

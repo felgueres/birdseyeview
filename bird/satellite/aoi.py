@@ -43,14 +43,9 @@ AREAS_OF_INTEREST = {
         bbox=[-87.93291695909029, 42.669478598705524, -87.90547365048131, 42.683757574885476],
         description="",
     ),
-    "meta_hyperion": AOI(
-        name="Meta Hyperion AI Campus",
-        bbox=[-91.80, 32.44, -91.70, 32.52],
-        description="",
-    ),
-    "rowan_cinco": AOI(
-        name="Rowan Digital Cinco Campus",
-        bbox=[-98.92, 29.24, -98.85, 29.30],
+    "xAI_memphis": AOI(
+        name="xAI",
+        bbox=[-90.15844304597351, 35.057030047073525, -90.15295608535577, 35.06262749602952],
         description="",
     ),
 }

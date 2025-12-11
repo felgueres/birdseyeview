@@ -1,10 +1,11 @@
 This project builds vision + reasoning tools. An application I'm exploring is
 intelligence for physical assets.
 
-| Examples                                   |                                                    |
-| ------------------------------------------ | -------------------------------------------------- |
-| Segmenting solar plants on video           | <img src="/docs/interactive_ui.png" width="350px"> |
-| Tracking progress on data center buildouts | <img src="/docs/fairwater.gif" width="350px">      |
+| Examples                                       | Vision                                             | Reasoning                                                                                                                                                                                                  |
+| ---------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Segmenting solar plants on video               | <img src="/docs/interactive_ui.png" width="350px"> |                                                                                                                                                                                                            |
+| Tracking progress on data center buildouts     | <img src="/docs/fairwater.gif" width="350px">      | Site evolved from earthworks to multi-building hyperscale campus. Primary road network and substation established early, followed by data halls achieving weather-tight status. Estimated 75-85% complete. |
+| Tracking progress on data center buildouts (2) | <img src="/docs/fairwater_2.gif" width="350px">    | Rapid evolution from site grading to structural enclosure. Substation and foundations transitioned to vertical construction with white roofing on primary halls. Estimated 70-80% complete.                |
 
 ## Setup
 

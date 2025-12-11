@@ -28,6 +28,7 @@ setup(
         "graphviz>=0.12",
         "pylint>=3.3.9",
         "rasterio>=1.3.0",
-        "requests>=2.31.0"
+        "requests>=2.31.0",
+        "google-genai>=1.0.0"
     ] 
 )
