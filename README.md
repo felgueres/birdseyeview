@@ -1,78 +1,10 @@
-This project builds tools for AI video understanding.
+This project builds vision + reasoning tools. An application I'm exploring is
+intelligence for physical assets.
 
-Examples:
-
-1. Segmenting physical assets on video
-
-<picture> 
-  <img alt="interactive ui demo" src="/docs/interactive_ui.png" width="450px""> 
-</picture>
-
-2. Change detection, here's a hyperscaler datacenter under construction.
-
-<picture> 
-  <img alt="interactive ui demo" src="/docs/fairwater.gif" width="450px""> 
-</picture>
-
-| Tasks                 | Description                                                                                       | Implemented |
-| --------------------- | ------------------------------------------------------------------------------------------------- | ----------- |
-| Detection             | What's in an image. Bounding box by frame.                                                        | X           |
-| Classification        | Label or top-k labels.                                                                            | X           |
-| Segmentation          | Mask every pixel per class found.                                                                 | X           |
-| Pose segmentation     | Detect body joints like elbows, knees and provide coordinates.                                    | X           |
-| Optical flow          | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field.    | X           |
-| Tracking              | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X           |
-| Scene understanding   | Build structured understanding of world (objects,layout,relations). Produces a scene graph.       | X           |
-| Depth estimation      | Predict distance on every pixel from the camera. Per-pixel depth map.                             | X           |
-| Temporal segmentation | Split by activity phases. Timeline segments.                                                      | X           |
-| Event detection       | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events.                   | X           |
-| Track and predict     | Track + forecast future positions. Trajectory with predicted path.                                | TBD         |
-
-```
-birdview/
-├── bird/
-│   ├── __init__.py
-│   ├── cli.py
-│   ├── config.py
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── camera.py
-│   │   ├── pipeline.py
-│   │   ├── dag.py
-│   │   └── transforms.py
-│   ├── events/
-│   │   ├── __init__.py
-│   │   ├── base.py
-│   │   ├── motion.py
-│   │   ├── interaction.py
-│   │   ├── serializer.py
-│   │   └── visualizer.py
-│   ├── vision/
-│   │   ├── __init__.py
-│   │   ├── detector.py
-│   │   ├── tracker.py
-│   │   ├── optical_flow.py
-│   │   ├── depth_estimator.py
-│   │   ├── background_remover.py
-│   │   ├── scene_graph.py
-│   │   ├── temporal_segmenter.py
-│   │   └── overlay.py
-│   └── viz/
-│       └── visualize_segments.py
-├── server/
-│   ├── app.py
-│   └── templates/
-│       └── index.html
-|
-├── modal/
-│   └── cli.py
-├── yolov8n.pt
-├── yolov8n-seg.pt
-├── yolov8n-pose.pt
-├── setup.py
-├── connect_alpha5000.sh
-└── README.md
-```
+| Examples                                   |                                                    |
+| ------------------------------------------ | -------------------------------------------------- |
+| Segmenting solar plants on video           | <img src="/docs/interactive_ui.png" width="350px"> |
+| Tracking progress on data center buildouts | <img src="/docs/fairwater.gif" width="350px">      |
 
 ## Setup
 
@@ -97,14 +29,22 @@ modal app stop birdview
 modal app list
 ```
 
-## Interactive
-
 ```bash
+# To inits the UI
 python3 server/app.py
 ```
 
-## Search
+## Tasks
 
-<picture> 
-  <img alt="interactive ui demo" src="/docs/query.png" width="450px""> 
-</picture>
+| Tasks                 | Description                                                                                       | Implemented |
+| --------------------- | ------------------------------------------------------------------------------------------------- | ----------- |
+| Detection             | What's in an image. Bounding box by frame.                                                        | X           |
+| Classification        | Label or top-k labels.                                                                            | X           |
+| Segmentation          | Mask every pixel per class found.                                                                 | X           |
+| Pose segmentation     | Detect body joints like elbows, knees and provide coordinates.                                    | X           |
+| Optical flow          | For every pixel, estimate how it moved from a frame to the next. Produces motion vector field.    | X           |
+| Tracking              | Follow an object across time and assign ID. Produces trajectories of id -> sequence of positions. | X           |
+| Scene understanding   | Build structured understanding of world (objects,layout,relations). Produces a scene graph.       | X           |
+| Depth estimation      | Predict distance on every pixel from the camera. Per-pixel depth map.                             | X           |
+| Temporal segmentation | Split by activity phases. Timeline segments.                                                      | X           |
+| Event detection       | Identify meaningful changes (entry,exit,fall,flight,interaction). Timed events.                   | X           |
